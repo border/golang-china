@@ -308,11 +308,15 @@ or an array, assignment
 copies the contents of the object.
 To allocate a new variable, use "new()", which
 returns a pointer to the allocated storage.
+在Go语言中，大部分的类型都是变量。如果你有个int或struct(结构体)或
+array(数组)的变量，你需要拷贝他们的内容到一个新对象中，并重新分配一个
+新的变量，就用new(), 它的返回值是一个指向被分配地址空间的指针。
 
 	type T struct { a, b int }
 	var t *T = new(T);
 
 or the more idiomatic
+或者用别的方法
 
 	t := new(T);
 
@@ -320,22 +324,32 @@ Some types&mdash;maps, slices, and channels (see below)&mdash;have reference sem
 If you're holding a slice or a map and you modify its contents, other variables
 referencing the same underlying data will see the modification.  For these three
 types you want to use the built-in function "make()":
+有一些类型，如: maps, slices 和 channels(见下面)有reference semantics(引用语意).
+如果你修改了slice 或 map相关的内容，其他引用了这些数据的变量也能看到这个改变。对于
+这三个类型你得使用另一个内建的函数make()
 
 	m := make(map[string]int);
 
 This statement initializes a new map ready to store entries.
 If you just declare the map, as in
+上面的语句初始化一个新的map并分配了存储空间
+如果你只想声明一个map，代码如下:
 
 	var m map[string]int;
 
 it creates a "nil" reference that cannot hold anything. To use the map,
 you must first initialize the reference using "make()" or by assignment from an
 existing map.
+它创建了一个nil(空的)引用并且没有分配存储空间。如果你想用这个map, 你必须使用make来
+初始化引用或者指向一个已经存在的map。
 
 Note that "new(T)" returns type "*T" while "make(T)" returns type
 "T".  If you (mistakenly) allocate a reference object with "new()",
 you receive a pointer to a nil reference, equivalent to
 declaring an uninitialized variable and taking its address.
+注意: new(T)返回的类型是*T, 而make(T)返回的是T. 如果你(错误的)使用new()分配
+了一个引用对象，你将会得到一个指向nil引用的指针。这个相当于声明了一个未初始化
+的变量并取得它的地址.
 
 An Interlude about Constants
 ----
@@ -345,11 +359,15 @@ There are no constants like "0LL" or "0x0UL".   Instead, integer
 constants are evaluated as large-precision values that
 can overflow only when they are assigned to an integer variable with
 too little precision to represent the value.
+虽然在Go中整数(integer)占用了大量的空间，但是常量类型的整数并没有占用很多空间。
+这里没有像0LL 或 0x0UL的常量，取而代之的是，使用整数常量作为大型高精度的值，只有当
+他们被重新定义给另一个变量的时候才能超载.
 
 	const hardEight = (1 &lt;&lt; 100) &gt;&gt; 97  // legal
 
 There are nuances that deserve redirection to the legalese of the
 language specification but here are some illustrative examples:
+这里重新定义和语言规范还是有些差别，下面是说明和规则:
 
 	var a uint64 = 0  // a has type uint64, value 0
 	a := uint64(0)    // equivalent; uses a "conversion"
@@ -364,6 +382,9 @@ sign or size to another, and between "ints" and "floats", plus a few other
 simple cases.  There are no automatic numeric conversions of any kind in Go,
 other than that of making constants have concrete size and type when
 assigned to a variable.
+转换只能简单的使用，比如: 转换整数(int)到去其他的精度和大小，整数(int)与
+浮点数(float), 还有其他一些简单类型。Go 里面没有任何自动数值转换，除了此处以为
+由常数建立的变量是需要确定大小和类型.
 
 An I/O Package
 ----
