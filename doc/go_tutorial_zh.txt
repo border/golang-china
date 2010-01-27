@@ -485,6 +485,8 @@ An I/O Package
 
 Next we'll look at a simple package for doing file I/O with the usual
 sort of open/close/read/write interface.  Here's the start of "file.go":
+接下来我们使用一个简单的包(package)来对文件(file)输入输出接口来操作: open/
+close/read/write. 让我们从file.go开始:
 
 --PROG progs/file.go /package/ /^}/
 
@@ -494,14 +496,20 @@ package hides the differences
 between various operating systems to give a consistent view of files and
 so on; here we're going to use its error handling utilities
 and reproduce the rudiments of its file I/O.
+在开始的己行里声明了一个&mdash;"file"&mdash;包, 还导入(import)了其他两个包os和syscall.
+os这个包封装了不同操作系统底层的实现，保留了统一的file(文件)和其他一些接口。在这里我们将
+会用error handling utilities(错误管理)和从新实现基本的file I/O(文件输入输出)
 
 The other item is the low-level, external "syscall" package, which provides
 a primitive interface to the underlying operating system's calls.
+还有其他一些比较底层的包(package), 如: syscall 包，它提供一些底层的系统调用(system's calls).
 
 Next is a type definition: the "type" keyword introduces a type declaration,
 in this case a data structure called "File".
 To make things a little more interesting, our "File" includes the name of the file
 that the file descriptor refers to.
+接下来是一个类型(type)定义: 用"type"这个关键字来声明一个类型. 在这个例子里数据结构(data structure)
+叫"File". 为了让这事变的有趣些，我们的File包含了一个这个文件的名字(name)用来描述这个文件。
 
 Because "File" starts with a capital letter, the type is available outside the package,
 that is, by users of the package.   In Go the rule about visibility of information is
@@ -510,11 +518,19 @@ a structure field or method) is capitalized, users of the package may see it. Ot
 name and hence the thing being named is visible only inside the package in which
 it is declared.  This is more than a convention; the rule is enforced by the compiler.
 In Go, the term for publicly visible names is ''exported''.
+因为"File"结构体中的首字母是大写，所以这个类型包(package)外部访问. 在GO中访问规则的处理
+是非常简单的: 如果名字(of a top-level type, function, method, constant or variable, or of
+a structure field or method)是大写，那么引用了这个包(package)的使用者就可以访问到它。不然
+名称和被命名的东西将只能有package内部看到。Go的这个规则比语言的规则要强硬，因为这个规则是由
+编译器(compiler)强制规范的。在GO中，一组公开可见的名称是"exported".
 
 In the case of "File", all its fields are lower case and so invisible to users, but we
 will soon give it some exported, upper-case methods.
+在这个File例子中, 所有的字段(fields)都是小写所以访问者看不到，但是我们将给它一个出口(exported),
+一个大写的methods.
 
 First, though, here is a factory to create a "File":
+开始先创建一个File.
 
 --PROG progs/file.go /newFile/ /^}/
 
@@ -522,6 +538,8 @@ This returns a pointer to a new "File" structure with the file descriptor and na
 filled in.  This code uses Go's notion of a ''composite literal'', analogous to
 the ones used to build maps and arrays, to construct a new heap-allocated
 object.  We could write
+这将返回一个指向新File结构体的指针并有文件描述和文件名. 这段代码使用了GO的''复合变量''(composite 
+literal)的概念，就想创建一个maps 和arrays一样。要创建一个新的heap-allocated对象，我们将会写成
 
 	n := new(File);
 	n.fd = fd;
@@ -530,13 +548,18 @@ object.  We could write
 
 but for simple structures like "File" it's easier to return the address of a nonce
 composite literal, as is done here on line 21.
+但像File这样简单的结构体有更简单的方法让它返回一个复合变量(composite literal)的地址,
+就像上个例子里面的21行。
 
 We can use the factory to construct some familiar, exported variables of type "*File":
+我们可以创建一个相似的结构，输出类型为*File的变量。
 
 --PROG progs/file.go /var/ /^.$/
 
 The "newFile" function was not exported because it's internal. The proper,
 exported factory to use is "Open":
+newFile这个函数没有输出(exported)是因为它是内部(internal)的. 真正的输出(exported)是
+Open这个函数.
 
 --PROG progs/file.go /func.Open/ /^}/
 
@@ -552,18 +575,30 @@ both of type "int" (although you'd have to look at the "syscall" package
 to see that).  Finally, line 35 returns two values: a pointer to the new "File"
 and the error.  If "syscall.Open" fails, the file descriptor "r" will
 be negative and "newFile" will return "nil".
+在这几行里出现了一些新的东西。首先，Open 返回多个变量值(multi-value)，一个File指针和一个error(
+等一下会介绍errors). 我们用括号类表来声明返回多个变量值(multi-value). 语法上它看
+起来像第二个参数列表。syscall.Open 这个函数同样也是返回multi-value, 接着我们能在31行
+的声明取得这个multi-value的返回值。它创建了r和e两个变量，这两个都是int类型(你必须去syscall的package
+里面才能看出来是个int类型)。最后，35行返回两个变量，一个指向File指针和一个error.
+如果syscall.Open打开失败， 这个文件描述r将会是个负值，newFile将会返回nil.
 
 About those errors:  The "os" library includes a general notion of an error.
 It's a good idea to use its facility in your own interfaces, as we do here, for
 consistent error handling throughout Go code.   In "Open" we use a
 conversion to translate Unix's integer "errno" value into the integer type
 "os.Errno", which implements "os.Error".
+关于这个错误(errors): os这个函数包含了一些错误的感念. 在你的接口中使用它是个不错
+的主意。就像我们在这里做的一样, 在GO里面统一管理错误处理。在Open这个函数中，我们
+采用了Unix的整数错误代码os.Errno，并用它来实现os.Error.
 
 Now that we can build "Files", we can write methods for them. To declare
 a method of a type, we define a function to have an explicit receiver
 of that type, placed
 in parentheses before the function name. Here are some methods for "*File",
 each of which declares a receiver variable "file".
+现在我们可以创建Files, 我们为它写了些方法(methods). 要声明一个方法(method)类型,
+我们定义了一个函数去指定它的类型，把它方在函数名之前的括号里。这里为*File创建了
+一些方法(method), 每个都声明了可接受文件变量.
 
 --PROG progs/file.go /Close/ END
 
@@ -572,22 +607,34 @@ members of the structure.  Methods are not declared within
 the "struct" declaration itself.  The "struct" declaration defines only data members.
 In fact, methods can be created for almost any type you name, such as an integer or
 array, not just for "structs".   We'll see an example with arrays later.
+这里没有使用this还有接受变量必须要访问结构体的成员。方法(methods)中并没有声明自己的结构体。
+struct结构只声明数据成员(data members). 事实上，这些方法(methods)能被创建在任何你能说出来
+的类型。如: 整数(integer), 数组(array), 并不仅仅只有结构体(structs). 我们待会就能看到数组
+(array)的例子。
+
 
 The "String" method is so called because of a printing convention we'll
 describe later.
+String这个方法之所以会被调用是为了更好的打印信息。我们待会才会说明。
 
 The methods use the public variable "os.EINVAL" to return the ("os.Error"
 version of the) Unix error code "EINVAL".  The "os" library defines a standard
 set of such error values.
+这个方法(methods)使用共有的变量os.EINVAL去返回(os.Error的版本)Unix错误代码EINVAL.
+os函数库中定义了标准的error变量。
 
 We can now use our new package:
+现在我们可以使用我们自己创建的包(package)了.
 
 --PROG progs/helloworld3.go /package/ END
 
 The ''"./"'' in the import of ''"./file"'' tells the compiler to use our own package rather than
 something from the directory of installed packages.
+这个''"./"''在导入(import)''"./file"''时告诉编译器(compiler)使用我们自己的package, 而不是在
+默认安装的package中找。
 
 Finally we can run the program:
+最后，我们来执行这个程序:
 
 	% helloworld3
 	hello, world
