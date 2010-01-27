@@ -7,8 +7,20 @@
 	翻译：<a href='http://chaishushan.blog.163.com'>柴树杉</a> <a href='mailto:chaishushan@gmail.com'>(chaishushan@gmail.com)</a>
 	翻译：<a href='http://www.wifihack.net/'>Bian Jiang</a> <a href='mailto:borderj@gmail.com'>(borderj@gmail.com)</a>
 
-简介
+Introduction 简介
 ----
+
+This document is a tutorial introduction to the basics of the Go programming
+language, intended for programmers familiar with C or C++. It is not a comprehensive
+guide to the language; at the moment the document closest to that is the
+<a href='/doc/go_spec.html'>language specification</a>.
+After you've read this tutorial, you might want to look at
+<a href='/doc/effective_go.html'>Effective Go</a>,
+which digs deeper into how the language is used.
+Also, slides from a 3-day course about Go are available:
+<a href='/doc/GoCourseDay1.pdf'>Day 1</a>,
+<a href='/doc/GoCourseDay2.pdf'>Day 2</a>,
+<a href='/doc/GoCourseDay3.pdf'>Day 3</a>.
 
 本文是关于Go编程语言的基础教程，主要面向有C/C++基础的读者。本文并不是一个语言的完整指南，关于
 Go的具体细节请参考 <a href='/doc/go_spec.html'>语言规范</a> 一文。在学习完入门教程后，
@@ -18,34 +30,59 @@ Go的具体细节请参考 <a href='/doc/go_spec.html'>语言规范</a> 一文�
 <a href='/doc/GoCourseDay2.pdf'>第二日</a>,
 <a href='/doc/GoCourseDay3.pdf'>第三日</a>。 
 
+The presentation here proceeds through a series of modest programs to illustrate
+key features of the language.  All the programs work (at time of writing) and are
+checked into the repository in the directory <a href='/doc/progs'>"/doc/progs/"</a>.
+
 下面将通过一些小程序来掩饰语言的一些关键特性。所有的演示程序都是可以运行的，程序的代码在安装目录的
 <a href='/doc/progs'>"/doc/progs/"</a>子目录中。
+
+Program snippets are annotated with the line number in the original file; for
+cleanliness, blank lines remain blank.
 
 文中的代码篇都都会以代码在源文件中的行号标注。为了清晰起见，我们忽略了源代码文件空白行的行号。
 
 Hello, World
 ----
 
+Let's start in the usual way:
+
 让我们从经典的"Hello, World"程序开始：
 
 --PROG progs/helloworld.go /package/ END
+
+Every Go source file declares, using a "package" statement, which package it's part of.
+It may also import other packages to use their facilities.
+This program imports the package "fmt" to gain access to
+our old, now capitalized and package-qualified, friend, "fmt.Printf".
 
 每个Go源文件开头都有一个"package"声明语句，指明文件所在的包。同时，我们也可以根据具体的需要
 来导入（import语句）特定的包文件。在这个例子中，我们通过导入“fmt”包来使用我们熟悉的printf函数。
 不过在Go语言中，Printf函数的开头是大写字母，并且需要fmt包名作为前缀：fmt.Printf。
 
+Functions are introduced with the "func" keyword.
+The "main" package's "main" function is where the program starts running (after
+any initialization).
+
 函数定义要使用“func“关键字。整个程序从main包中的main函数开始执行（在变量和包初始化之后）。
 
+String constants can contain Unicode characters, encoded in UTF-8.
+(In fact, Go source files are defined to be encoded in UTF-8.)
+
 常量字符串可以包含Unicode字符，采用UTF-8编码。实际上，所有的Go语言源文件都采用UTF-8编码。
+
+The comment convention is the same as in C++:
 
 代码注视的方式和C++类似：
 
 	/* ... */
 	// ...
 
+Later we'll have much more to say about printing.
+
 稍后，我们还会涉及到打印函数的更多技术。
 
-分号
+Semicolons 分号
 ----
 
 You might have noticed that our program has no semicolons.  In Go
@@ -72,7 +109,7 @@ the "if"; if you don't, there are situations that may not compile
 or may give the wrong result.  The language forces the brace style
 to some extent.
 
-编译
+Compiling 编译
 ----
 
 Go is a compiled language.  At the moment there are two compilers.
@@ -83,7 +120,14 @@ compilers run significantly faster but generate less efficient code
 than "gccgo".  At the time of writing (late 2009), they also have
 a more robust run-time system although "gccgo" is catching up.
 
+Go是一个编译型的语言。目前有两种编译器，其中"Gccgo"采用GCC作为编译后端。另外还有
+根据处理器架构命名的编译器：针对64位x86结构为"6g"，针对32位x86结构的为"8g"等等。
+这些go专用的编译器可以产生比gccgo更高效的目标代码，也有更健壮的运行时系统。当然，gccgo
+编译器也在快速的完善之中。
+
 Here's how to compile and run our program.  With "6g", say,
+
+下面看看如何编译并运行程序。先是针对64位x86结构的“6g”：
 
 	$ 6g helloworld.go  # compile; object goes into helloworld.6
 	$ 6l helloworld.6   # link; output goes into 6.out
@@ -92,6 +136,8 @@ Here's how to compile and run our program.  With "6g", say,
 	$
 
 With "gccgo" it looks a little more traditional.
+
+gccgo和传统的gcc编译方法类似：
 
 	$ gccgo helloworld.go
 	$ a.out
@@ -103,6 +149,8 @@ Echo
 
 Next up, here's a version of the Unix utility "echo(1)":
 
+下面，是Unix系统中"echo(1)"命令的简化实现：
+
 --PROG progs/echo.go /package/ END
 
 This program is small but it's doing a number of new things.  In the last example,
@@ -111,6 +159,10 @@ we saw "func" introduce a function.  The keywords "var", "const", and "type"
 Notice that we can group declarations of the same sort into
 parenthesized lists, one item per line, as on lines 7-10 and 14-17.
 But it's not necessary to do so; we could have said
+
+程序虽然很小，但是包含了go语言的更多特性。在前面的例子中，我们演示了用"func"定义main
+函数。其他定义相关的关键字还有"var"、"const"和"type"等。我们还可以像"import"那样，每次
+导入一组名字，每个一行（如7－10和14－17行所示）。当然，每个变量分开定义，如：
 
 	const Space = " "
 	const Newline = "\n"
@@ -126,43 +178,73 @@ packages are imported using the name defined by the imported package,
 which by convention is of course the file name itself.  Our ``hello world'' program
 could have said just "import &quot;fmt&quot;".
 
+程序首先导入"&quot;os&quot;"包，因为后面要用到包中的一个"*os.File"类型的"Stdout"变量。
+这里的"import"语句实际上是一个声明，和我们在“hello world“程序中所使用的，它的名字标识符（fmt）
+会取代fmt包中所定义的成员，并找到正确的目录和地址。在这个程序中，虽然我们没有在import中使用明确
+的名称，默认情况下将使用包的名字来import包。在“hello world“程序中，我们只是简单的
+"import &quot;fmt&quot;"。
+
 You can specify your
 own import names if you want but it's only necessary if you need to resolve
 a naming conflict.
 
+如果需要，你可以自己重新定义被import包的名字。但那不是必须的，只在出来包名字冲突的时候会用到。
+
 Given "os.Stdout" we can use its "WriteString" method to print the string.
+
+通过"os.Stdout"，我们可以用"WriteString"来输出字符串。
 
 Having imported the "flag" package, line 12 creates a global variable to hold
 the value of echo's "-n" flag. The variable "omitNewline" has type "*bool", pointer
 to "bool".
 
+现在已经导入"flag"包，并且在12行创建了一个全局变量，用于保存echo的"-n"命令行参数。变量
+"omitNewline"为一个bool型指针。
+
 In "main.main", we parse the arguments (line 20) and then create a local
 string variable we will use to build the output.
 
+在"main.main"中，我们进行了参数解析（20行），并创建了一个局部变量用于保存要输出的内容。
+
 The declaration statement has the form
+
+变量声明如下：
 
 	var s string = "";
 
 This is the "var" keyword, followed by the name of the variable, followed by
 its type, followed by an equals sign and an initial value for the variable.
 
+这里有一个"var"关键字，后面跟着变量名字和变量的数据类型，再后面可以用“＝”符号来进行赋值。
+
 Go tries to be terse, and this declaration could be shortened.  Since the
 string constant is of type string, we don't have to tell the compiler that.
 We could write
 
+这个变量的声明有更简洁的方式，因为根据初始值来判断它的数据类型，没有必要显式写出数据类型。
+因此也可以像下面代码这样定义变量：
+
 	var s = "";
 
 or we could go even shorter and write the idiom
+
+还有更短的写法：
 
 	s := "";
 
 The ":=" operator is used a lot in Go to represent an initializing declaration.
 There's one in the "for" clause on the next line:
 
+操作符":="将在Go中大量使用，它可以在声明一个变量同时进行初始化。下面的代码是在"for"中声明并
+初始化变量：
+
 --PROG  progs/echo.go /for/
 
 The "flag" package has parsed the arguments and left the non-flag arguments
 in a list that can be iterated over in the obvious way.
+
+"flag"包会解析命令行参数，并将没有flag的参数保存到一个列表中。可以通过flag的参数列表
+访问命令行参数。
 
 The Go "for" statement differs from that of C in a number of ways.  First,
 it's the only looping construct; there is no "while" or "do".  Second,
@@ -170,19 +252,31 @@ there are no parentheses on the clause, but the braces on the body
 are mandatory.  The same applies to the "if" and "switch" statements.
 Later examples will show some other ways "for" can be written.
 
+Go语言的"for"语句和C语言中有几个不同的地方：第一，这是Go中唯一的循环语句，Go中没有while或
+do语句；第二，for的条件语句并没有用括号包起来，但是循环体却必须要花括弧，这个规则和if和switch
+一致。后面我们会看到for的一些例子。
+
 The body of the loop builds up the string "s" by appending (using "+=")
 the flags and separating spaces. After the loop, if the "-n" flag is not
 set, the program appends a newline. Finally, it writes the result.
 
+在循环体中，通过"+="符号向字符串s添加新的参数信息。在循环结束后，根据命令行是否有"-n"选项，
+判断末尾是否要添加换行符。最后输出结果。
+
 Notice that "main.main" is a niladic function with no return type.
 It's defined that way.  Falling off the end of "main.main" means
 ''success''; if you want to signal an erroneous return, call
+
+值得注意的地方是"main.main"函数并没有返回值（函数被定义为没有返回值的类型）。如果"main.main"
+运行到了末尾，就表示“成功”。如果想返回一个出错信息，可统一用系统调用强制退出：
 
 	os.Exit(1)
 
 The "os" package contains other essentials for getting
 started; for instance, "os.Args" is a slice used by the
 "flag" package to access the command-line arguments.
+
+"os"包还包含了其它的一些元素，例如"os.Args"是"flag"包的一部分（用来获取命令行输入）。
 
 An Interlude about Types
 ----
