@@ -90,10 +90,16 @@ code, the only place you typically see semicolons is separating the
 clauses of "for" loops and the like; they are not necessary after
 every statement.
 
+比较细心的读者可能已经发现前面的代码中没有出现分号“;”。在Go语言中，只有在for循环的
+初始化部分经常用到分号。在代码段的末尾分号都不是必须的。
+
 In fact, what happens is that the formal language uses semicolons,
 much as in C or Java, but they are inserted automatically
 at the end of every line that looks like the end of a statement. You
 don't need to type them yourself.
+
+你可以想在C或JAVA中那样使用分号。但是很多情况下，分号可以由Go编译起自己添加，用户不
+需要写全部的分号。
 
 For details about how this is done you can see the language
 specification, but in practice all you need to know is that you
@@ -102,12 +108,20 @@ them in if you want to write multiple statements per line.) As an
 extra help, you can also leave out a semicolon immediately before
 a closing brace.
 
+关于细节部分，可以查看Go语言说明文档。不过在实际写代码时，只需要记得一行末尾的分号
+可以省略就可以了（对于一行写多个语句的，可以用分号隔开）。另外一点，在退出某个区域的
+时候，分号也是可以省略的。
+
 This approach makes for clean-looking, semicolon-free code.  The
 one surprise is that it's important to put the opening
 brace of a construct such as an "if" statement on the same line as
 the "if"; if you don't, there are situations that may not compile
 or may give the wrong result.  The language forces the brace style
 to some extent.
+
+极端情况下，甚至可以写出没有任何分号的代码。不过有一个重要的地方，对于"if"等语句，
+需要将后面代码段的开始花括弧放在"if"语句的同一行，如果不这样的话可能出现编译错误。
+Go语言强制将开始花括弧放在同一行末尾的风格。
 
 Compiling 编译
 ----
@@ -278,7 +292,7 @@ started; for instance, "os.Args" is a slice used by the
 
 "os"包还包含了其它的一些元素，例如"os.Args"是"flag"包的一部分（用来获取命令行输入）。
 
-An Interlude about Types
+An Interlude about Types 类型简介
 ----
 
 Go has some familiar types such as "int" and "float", which represent
@@ -289,16 +303,27 @@ distinct types; even if "int" and "int32" are both 32 bits in size,
 they are not the same type.  There is also a "byte" synonym for
 "uint8", which is the element type for strings.
 
+Go语言中有一些通用的类型，例如"int"和"float"，它们不同机器上占用适当空间大小。同时，
+也包含了许多大小固定的类型，例如"int8"和"float64"，还有无符号类型"uint"和"uint32"。
+需要注意的是，"int"和"int32"虽然占有同样的内存大小，但是却不是同一种数据类型。不过
+"byte"和"uint8"却是相同的类型，它们是字符串中字符类型。
+
 Speaking of "string", that's a built-in type as well.  Strings are
 <i>immutable values</i>&mdash;they are not just arrays of "byte" values.
 Once you've built a string <i>value</i>, you can't change it, although
 of course you can change a string <i>variable</i> simply by
 reassigning it.  This snippet from "strings.go" is legal code:
 
+说道字符串"string"，它是一个内建类型。字符串虽然是字符序列，但并不是一个字符数组。
+当你建立字符串之后，你就不能改变字符串中的元素。不过可以通过指定新字符串来改变它。
+下面列举"strings.go"例子说明字符串的用法：
+
 --PROG progs/strings.go /hello/ /ciao/
 
 However the following statements are illegal because they would modify
 a "string" value:
+
+不管如何，下面的用法是禁止的，因为它们试图修改字符串的字符元素的值：
 
 	s[0] = 'x';
 	(*p)[1] = 'y';
@@ -306,10 +331,17 @@ a "string" value:
 In C++ terms, Go strings are a bit like "const strings", while pointers
 to strings are analogous to "const string" references.
 
+Go中的字符串和C++中的"const strings"概念类似，字符串指针和C++中的"const strings"
+引用类似。
+
 Yes, there are pointers.  However, Go simplifies their use a little;
 read on.
 
+是的，它们都是是指针，虽然Go中更简化一些。
+
 Arrays are declared like this:
+
+数组的声明如下：
 
 	var arrayOfInt [10]int;
 
@@ -317,6 +349,10 @@ Arrays, like strings, are values, but they are mutable. This differs
 from C, in which "arrayOfInt" would be usable as a pointer to "int".
 In Go, since arrays are values, it's meaningful (and useful) to talk
 about pointers to arrays.
+
+数组和字符串一样是一个值对象，但是数组是可以修改的。但是不同于C语言，"int"类型数组
+"arrayOfInt"并不能转化为"int"指针。因为，在Go语言中数组是一个值对象，它在内部保存
+"int"指针。
 
 The size of the array is part of its type; however, one can declare
 a <i>slice</i> variable, to which one can assign a pointer to
@@ -330,6 +366,11 @@ an underlying, often anonymous, regular array.  Multiple slices
 can share data if they represent pieces of the same array;
 multiple arrays can never share data.
 
+数组的大小是数组变量的一部分。但是我们可以通过定义一个<i>slice</i>变量，来对数据进行
+操作。一个<i>slice</i>表示"a[low : high]"，它是对数组一部分的引用。Slices虽然看起来
+和数组类似，但是它并没有自己的内存空间，相反它在底层关引用一段内存。多个Slices如果引用同
+一个数组可以共享数组，但是多个数组则不可能共享数据。
+
 Slices are much more common in Go programs than
 regular arrays; they're more flexible, have reference semantics,
 and are efficient.  What they lack is the precise control of storage
@@ -337,16 +378,26 @@ layout of a regular array; if you want to have a hundred elements
 of an array stored within your structure, you should use a regular
 array.
 
+在Go中Slices使用的更为普遍，因为它更有弹性，同时也具有效率。但是，Slices缺少对内存的绝对
+控制。如果你只是想要一个可以存放100个元素，那么你就应该选择数组了。
+
 When passing an array to a function, you almost always want
 to declare the formal parameter to be a slice.  When you call
 the function, take the address of the array and  Go will
 create (efficiently) a slice reference and pass that.
 
+当需要传递一个数组给函数时，你应该将函数的参数定义为一个Slice。这样，在调用函数的时候，
+数组将被自动转换为slice传入。
+
 Using slices one can write this function (from "sum.go"):
+
+使用slices可以写出以下函数（来自"sum.go"）：
 
 --PROG progs/sum.go /sum/ /^}/
 
 and invoke it like this:
+
+可以这样调用：
 
 --PROG progs/sum.go /1,2,3/
 
@@ -360,8 +411,15 @@ Putting an "&amp;"
 in front gives us the address of a unique instance of the value.  We pass the
 pointer to "sum()" by (implicitly) promoting it to a slice.
 
+函数的返回值类型在参数列表后定义。表达式"[3]int{1,2,3}"定义一个含有3个"int"类型元素的数组
+（并且已经初始化），然后用"&amp;"来获取数组的地址。我们用数组指针作为参数调用"sum()"，数组
+指针被自动转换为slice类型。
+
 If you are creating a regular array but want the compiler to count the
 elements for you, use "..." as the array size:
+
+如果你创建一个初始化的数组，你可以倚赖编译起计算数组的元素数目，只要在数组大小中填写"..."就
+可以了：
 
 	s := sum(&amp;[...]int{1,2,3});
 
@@ -369,9 +427,14 @@ In practice, though, unless you're meticulous about storage layout within a
 data structure, a slice itself&mdash;using empty brackets and no
 "&amp;"&mdash;is all you need:
 
+在编码时，除非需要精确控制内存布局；简单的方式是用slice（数组大小为空）作为参数，并且不需要
+取数组的地址。
+
 	s := sum([]int{1,2,3});
 
 There are also maps, which you can initialize like this:
+
+还有map类型，可以用以下代码初始化：
 
 	m := map[string]int{"one":1 , "two":2}
 
@@ -379,12 +442,20 @@ The built-in function "len()", which returns number of elements,
 makes its first appearance in "sum".  It works on strings, arrays,
 slices, maps, and channels.
 
+用内建的"len()"函数，可以获取元素的数目，该函数在前面的"sum"中用到过。"len()"函数
+还可以用在strings, arrays, slices, maps, 和 channels 中。
+
 By the way, another thing that works on strings, arrays, slices, maps
 and channels is the "range" clause on "for" loops.  Instead of writing
+
+还有另外"range"方法可以用到strings, arrays, slices, maps, 和 channels 中，
+它可以用于"for"循环的迭代。以下代码
 
 	for i := 0; i &lt; len(a); i++ { ... }
 
 to loop over the elements of a slice (or map or ...) , we could write
+
+也可以写成：
 
 	for i, v := range a { ... }
 
@@ -393,6 +464,8 @@ elements of the target of the range.   See
 <a href='/doc/effective_go.html'>Effective Go</a>
 for more examples of its use.
 
+这里的"i"对应元素的索引，"v"对应元素的值。关于更多的细节可以参考
+<a href='/doc/effective_go.html'>Effective Go</a>。
 
 An Interlude about Allocation
 ----
