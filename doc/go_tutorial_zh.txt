@@ -719,6 +719,8 @@ Rotting cats
 
 Building on the "file" package, here's a simple version of the Unix utility "cat(1)",
 "progs/cat.go":
+在我们上面创建的file包(package)基础之上，实现一个简单的Unix工具 "cat(1)", "progs/cat.go":
+
 
 --PROG progs/cat.go /package/ END
 
@@ -730,23 +732,36 @@ has the same idea.)  The "switch" statement is general: it evaluates the cases
 from  top to bottom looking for the first case that matches the value; the
 case expressions don't need to be constants or even integers, as long as
 they all have the same type.
+现在应该很容易被理解，但是还有些新的语法"switch". 比如: 包括了"for"循环， "if"和
+"switch"初始化的语句。在"switch"语句的18行用了"f.Read()"函数的返回值"nr"和"er"做为
+变量(25行中的"if"也采用同样的方法)。这里的"switch"语法和其他语言语法基本相同，每个分支(cases)
+从上到下查找是否与相关的表达式相同，分支(case)的表达式不仅仅是常量(constants)或整数(integers),
+它可以是你想到的任意类型。
 
 Since the "switch" value is just "true", we could leave it off&mdash;as is also
 the situation
 in a "for" statement, a missing value means "true".  In fact, such a "switch"
 is a form of "if-else" chain. While we're here, it should be mentioned that in
 "switch" statements each "case" has an implicit "break".
+这个"switch"的值永远是"真(true)", 我们会一直执行它, 就像"for"语句，不写值默认是"真"(true).
+事实上，"switch"是从"if-else"由来的。在这里我们要说明, "switch"语句中的每个"分支"(case)都
+默认隐藏了"break".
 
 Line 25 calls "Write()" by slicing the incoming buffer, which is itself a slice.
 Slices provide the standard Go way to handle I/O buffers.
+在25行中调用"Write()"采用了slicing来取得buffer数据. 在标准的GO中提供了Slices对I/O buffers的操作。
 
 Now let's make a variant of "cat" that optionally does "rot13" on its input.
 It's easy to do by just processing the bytes, but instead we will exploit
 Go's notion of an <i>interface</i>.
+现在让我们做一个"cat"的升级版让"rot13"来处理输入, 就是个简单的字符处理，但是要
+采用GO的新特性<i>"接口(interface)"</i>来实现。
 
 The "cat()" subroutine uses only two methods of "f": "Read()" and "String()",
 so let's start by defining an interface that has exactly those two methods.
 Here is code from "progs/cat_rot13.go":
+这个"cat()"使用了2个子程序"f":"Read()"和"String", 让我们定义这2个接口，
+源码参考 "progs/cat_rot13.go"
 
 --PROG progs/cat_rot13.go /type.reader/ /^}/
 
@@ -759,16 +774,24 @@ first by writing a second type that implements "reader", one that wraps an
 existing "reader" and does "rot13" on the data. To do this, we just define
 the type and implement the methods and with no other bookkeeping,
 we have a second implementation of the "reader" interface.
+任何类型的方法都有"reader"这两个方法 &mdash; 也就是说实现了这两个方法，
+任何类型的方法都能使用。由于"file.File"实现了"reader"接口，我们就可以让"cat"
+的子程序访问"reader"从而取代了"*file.File"并且能正常工作，让我们来些第二个类型实现
+"reader", 一个关注现有的"reader"，另一个"rot13"只关注数据。我们只是定义了这个类型和
+实现了这个方法并没有做其他的内部处理, 我们实现了第二个"reader"接口.
 
 --PROG progs/cat_rot13.go /type.rotate13/ /end.of.rotate13/
 
 (The "rot13" function called on line 42 is trivial and not worth reproducing here.)
+(42行的"rot13"函数非常简单，没有必要在这里进行讨论)
 
 To use the new feature, we define a flag:
+为了使用新的特性，我们定义了一个标记(flag):
 
 --PROG progs/cat_rot13.go /rot13Flag/
 
 and use it from within a mostly unchanged "cat()" function:
+用它基本上不需要修改"cat()"这个函数:
 
 --PROG progs/cat_rot13.go /func.cat/ /^}/
 
@@ -778,8 +801,13 @@ Lines 56 through 58 set it all up: If the "rot13" flag is true, wrap the "reader
 we received into a "rotate13" and proceed.  Note that the interface variables
 are values, not pointers: the argument is of type "reader", not "*reader",
 even though under the covers it holds a pointer to a "struct".
+(我们应该对"main"和"cat"单独做些封装，不仅仅是对类型参数的修改，就当是练习)从56行到
+58行: 如果"rot13"标记是真，封装的"reader"就会接受数据并传给"rotate13"并处理. 注意:
+这个接口的值是变量，不是指针，这个参数是"reader"类型，不是"*reader", 尽管后面转换为
+指向结构体的指针。
 
 Here it is in action:
+这里是执行结果:
 
 <pre>
 	% echo abcdefghijklmnopqrstuvwxyz | ./cat
@@ -791,6 +819,7 @@ Here it is in action:
 
 Fans of dependency injection may take cheer from how easily interfaces
 allow us to substitute the implementation of a file descriptor.
+也许你会说使用注入依赖(dependency injection)能轻松的让接口以一个文件描述符执行。
 
 Interfaces are a distinctive feature of Go.  An interface is implemented by a
 type if the type implements all the methods declared in the interface.
