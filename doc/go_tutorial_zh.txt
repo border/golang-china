@@ -1055,6 +1055,13 @@ Here is the first function in "progs/sieve.go":
 
 这是"progs/sieve.go"程序的第一个函数：
 
+09    // Send the sequence 2, 3, 4, ... to channel 'ch'.
+10    func generate(ch chan int) {
+11        for i := 2; ; i++ {
+12            ch <- i  // Send 'i' to channel 'ch'.
+13        }
+14    }
+
 --PROG progs/sieve.go /Send/ /^}/
 
 The "generate" function sends the sequence 2, 3, 4, 5, ... to its
@@ -1062,12 +1069,29 @@ argument channel, "ch", using the binary communications operator "&lt;-".
 Channel operations block, so if there's no recipient for the value on "ch",
 the send operation will wait until one becomes available.
 
-函数"generate"用于生成2, 3, 4, 5, ...自然数序列，然后发送到管道。
+函数"generate"用于生成2, 3, 4, 5, ...自然数序列，然后依次发送到管道。
+这里用到了二元操作符"&lt;-"， 它用于向管道发送数据。当管道没有接受者的时候
+会阻塞，直到有接收者从管道接受数据为止。
 
 The "filter" function has three arguments: an input channel, an output
 channel, and a prime number.  It copies values from the input to the
 output, discarding anything divisible by the prime.  The unary communications
 operator "&lt;-" (receive) retrieves the next value on the channel.
+
+过滤器函数有三个参数：输入输出管道和用于过滤的素数。当输入管道读出来的数不能被
+过滤素数整除时，则将当前整数发送到输出管道。这里用到了"&lt;-"操作符，它用于从
+管道读取数据。
+
+16    // Copy the values from channel 'in' to channel 'out',
+17    // removing those divisible by 'prime'.
+18    func filter(in, out chan int, prime int) {
+19        for {
+20            i := <-in  // Receive value of new variable 'i' from 'in'.
+21            if i % prime != 0 {
+22                out <- i  // Send 'i' to channel 'out'.
+23            }
+24        }
+25    }
 
 --PROG progs/sieve.go /Copy.the/ /^}/
 
@@ -1079,10 +1103,18 @@ invoke the function, prefixing the call with the keyword "go";
 this starts the function running in parallel with the current
 computation but in the same address space:
 
+整数生成器generator函数和过滤器filters是并行执行的。Go语言有自己的并发
+程序设计模型，这个和传统的进程/线程/轻量线程类似。为了区别，我们把Go语言
+中的并行程序称为<i>goroutines</i>。如果一个函数要以goroutines方式并行执行，
+只要用"go"关键字作为函数调用的前缀即可。goroutines和它的启动线程并行执行，
+但是共享一个地址空间。例如，以goroutines方式执行前面的sum函数：
+
 	go sum(hugeArray); // calculate sum in the background
 
 If you want to know when the calculation is done, pass a channel
 on which it can report back:
+
+如果想知道计算什么时候结束，可以让sum用管道把结果返回：
 
 	ch := make(chan int);
 	go sum(hugeArray, ch);
@@ -1092,6 +1124,20 @@ on which it can report back:
 Back to our prime sieve.  Here's how the sieve pipeline is stitched
 together:
 
+再回到我们的素数筛选程序。下面程序演示如何将不同的素数筛链接在一起：
+
+28    func main() {
+29        ch := make(chan int)  // Create a new channel.
+30        go generate(ch)  // Start generate() as a goroutine.
+31        for {
+32            prime := <-ch
+33            fmt.Println(prime)
+34            ch1 := make(chan int)
+35            go filter(ch, ch1, prime)
+36            ch = ch1
+37        }
+38    }
+
 --PROG progs/sieve.go /func.main/ /^}/
 
 Line 29 creates the initial channel to pass to "generate", which it
@@ -1099,9 +1145,27 @@ then starts up.  As each prime pops out of the channel, a new "filter"
 is added to the pipeline and <i>its</i> output becomes the new value
 of "ch".
 
+29行先调用"generate"函数，用于产生最原始的自然数序列（从2开始）。然后
+从输出管道读取的第一个数为新的素数，并以这个新的素数生成一个新的过滤器。
+然后将新创建的过滤器添加到前一个过滤器后面，新过滤器的输出作为新的输出
+管道。
+
 The sieve program can be tweaked to use a pattern common
 in this style of programming.  Here is a variant version
 of "generate", from "progs/sieve1.go":
+
+sieve程序还可以写的更简洁一点。这里是"generate"的改进，代码在
+"progs/sieve1.go"中：
+
+10    func generate() chan int {
+11        ch := make(chan int)
+12        go func(){
+13            for i := 2; ; i++ {
+14                ch <- i
+15            }
+16        }()
+17        return ch
+18    }
 
 --PROG progs/sieve1.go /func.generate/ /^}/
 
@@ -1110,14 +1174,34 @@ channel, launches a goroutine running a function literal, and
 returns the channel to the caller.  It is a factory for concurrent
 execution, starting the goroutine and returning its connection.
 
+新完善的generate函数在内部进行必须的初始化操作。它创建输出管道，然后
+启动goroutine用于产生整数序列，最后返回输出管道。它类似于一个并发程序
+的工厂函数，完成后返回一个用于链接的管道。
+
 The function literal notation (lines 12-16) allows us to construct an
 anonymous function and invoke it on the spot. Notice that the local
 variable "ch" is available to the function literal and lives on even
 after "generate" returns.
 
+第12-16行用go关键字启动一个匿名函数。需要注意的是，generate函数的"ch"
+变量对于匿名函数是可见，并且"ch"变量在generate函数返回后依然存在（因为
+匿名的goroutine还在运行）。
+
 The same change can be made to "filter":
 
 这里我们采用过滤器"filter"来筛选后面的素数：
+
+21    func filter(in chan int, prime int) chan int {
+22        out := make(chan int)
+23        go func() {
+24            for {
+25                if i := <-in; i % prime != 0 {
+26                    out <- i
+27                }
+28            }
+29        }()
+30        return out
+31    }
 
 --PROG progs/sieve1.go /func.filter/ /^}/
 
@@ -1127,15 +1211,35 @@ result, and while we're at it let's turn it into a factory too:
 函数"sieve"对应处理的一个主循环，它只是依次将数列交给后面的素数筛选器进行筛选。
 如果遇到新的素数，再输出素数后以该素数创建信的筛选器。
 
+33    func sieve() chan int {
+34        out := make(chan int)
+35        go func() {
+36            ch := generate()
+37            for {
+38                prime := <-ch
+39                out <- prime
+40                ch = filter(ch, prime)
+41            }
+42        }()
+43        return out
+44    }
+
 --PROG progs/sieve1.go /func.sieve/ /^}/
 
 Now "main"'s interface to the prime sieve is a channel of primes:
 
 主函数入口启动素数生成服务器，然后打印从管道输出的素数：
 
+46    func main() {
+47        primes := sieve()
+48        for {
+49            fmt.Println(<-primes)
+50        }
+51    }
+
 --PROG progs/sieve1.go /func.main/ /^}/
 
-Multiplexing 通信
+Multiplexing 多路复用
 ----
 
 With channels, it's possible to serve multiple independent client goroutines without
