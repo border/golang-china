@@ -829,6 +829,10 @@ There is no type hierarchy; things can be much more <i>ad hoc</i>,
 as we saw with "rot13".  The type "file.File" implements "reader"; it could also
 implement a "writer", or any other interface built from its methods that
 fits the current situation. Consider the <i>empty interface</i>
+接口(interfaces)是Go的一个特性，一个接口是由类型实现的，接口就是声明该类型的所有方法。
+也就是说一个类型可以实现多个不同的接口, 没有任何类型的限制，就像我们的例子"rot13".
+"file.File"这个类型实现了"reader", 它也能实现"writer", 或通过其他的方法来实现这个接口。
+参考<i>空接口(empty interface)</i>
 
 <pre>
 	type Empty interface {}
@@ -836,6 +840,7 @@ fits the current situation. Consider the <i>empty interface</i>
 
 <i>Every</i> type implements the empty interface, which makes it
 useful for things like containers.
+任何类型都默认实现了空接口，我们可以用空接口来保存任意类型。
 
 Sorting
 ----
