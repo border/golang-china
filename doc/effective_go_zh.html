@@ -1,6 +1,6 @@
 <!-- Effective Go -->
 
-<h2 id="introduction">Introduction</h2>
+<h2 id="introduction">Introduction 简介</h2>
 
 <p>
 Go is a new language.  Although it borrows ideas from
@@ -29,7 +29,7 @@ and the <a href="go_tutorial.html">tutorial</a>, both of which you
 should read first.
 </p>
 
-<h3 id="read">Examples</h3>
+<h3 id="read">Examples 例子</h3>
 
 <p>
 The <a href="/src/pkg/">Go package sources</a>
@@ -42,7 +42,7 @@ background.
 </p>
 
 
-<h2 id="formatting">Formatting</h2>
+<h2 id="formatting">Formatting 格式化</h2>
 
 <p>
 Formatting issues are the most contentious
@@ -125,7 +125,7 @@ x&lt;&lt;8 + y&lt;&lt;16
     </dd>
 </dl>
 
-<h2 id="commentary">Commentary</h2>
+<h2 id="commentary">Commentary 注释</h2>
 
 <p>
 Go provides C-style <code>/* */</code> block comments
@@ -249,7 +249,7 @@ var (
 )
 </pre>
 
-<h2 id="names">Names</h2>
+<h2 id="names">Names 命名</h2>
 
 <p>
 Names are as important in Go as in any other language.
@@ -261,7 +261,7 @@ in Go programs.
 </p>
 
 
-<h3 id="package-names">Package names</h3>
+<h3 id="package-names">Package names 包的命名</h3>
 
 <p>
 When a package is imported, the package name becomes an accessor for the
@@ -327,7 +327,7 @@ to write a helpful doc comment than to attempt to put all the information
 into the name.
 </p>
 
-<h3 id="interface-names">Interface names</h3>
+<h3 id="interface-names">Interface names 接口的命名</h3>
 
 <p>
 By convention, one-method interfaces are named by
@@ -357,7 +357,7 @@ or <code>mixedCaps</code> rather than underscores to write
 multiword names.
 </p>
 
-<h2 id="semicolons">Semicolons</h2>
+<h2 id="semicolons">Semicolons 分号</h2>
 
 <p>
 Like C, Go's formal grammar uses semicolons to terminate statements;
@@ -420,7 +420,7 @@ if i &lt; f()  // wrong!
 </pre>
 
 
-<h2 id="control-structures">Control structures</h2>
+<h2 id="control-structures">Control structures 控制结构</h2>
 
 <p>
 The control structures of Go are related to those of C but different
@@ -666,9 +666,9 @@ case *int:
 }
 </pre>
 
-<h2 id="functions">Functions</h2>
+<h2 id="functions">Functions 函数</h2>
 
-<h3 id="multiple-returns">Multiple return values</h3>
+<h3 id="multiple-returns">Multiple return values 多个返回值</h3>
 
 <p>
 One of Go's unusual features is that functions and methods
@@ -729,7 +729,7 @@ You could use it to scan the numbers in an input array <code>a</code> like this:
     }
 </pre>
 
-<h3 id="named-results">Named result parameters</h3>
+<h3 id="named-results">Named result parameters 命名的返回值</h3>
 
 <p>
 The return or result "parameters" of a Go function can be given names and
@@ -770,7 +770,7 @@ func ReadFull(r Reader, buf []byte) (n int, err os.Error) {
 }
 </pre>
 
-<h2 id="data">Data</h2>
+<h2 id="data">Data 数据</h2>
 
 <h3 id="allocation_new">Allocation with <code>new()</code></h3>
 
@@ -821,7 +821,7 @@ p := new(SyncedBuffer)  // type *SyncedBuffer
 var v SyncedBuffer      // type  SyncedBuffer
 </pre>
 
-<h3 id="composite_literals">Constructors and composite literals</h3>
+<h3 id="composite_literals">Constructors and composite literals 构造和初始化成员</h3>
 
 <p>
 Sometimes the zero value isn't good enough and an initializing
@@ -959,7 +959,7 @@ and does not return a pointer.
 To obtain an explicit pointer allocate with <code>new()</code>.
 </p>
 
-<h3 id="arrays">Arrays</h3>
+<h3 id="arrays">Arrays 数组</h3>
 
 <p>
 Arrays are useful when planning the detailed layout of memory and sometimes
@@ -1006,7 +1006,7 @@ x := Sum(&amp;array)  // Note the explicit address-of operator
 But even this style isn't idiomatic Go.  Slices are.
 </p>
 
-<h3 id="slices">Slices</h3>
+<h3 id="slices">Slices 切片</h3>
 
 <p>
 Slices wrap arrays to give a more general, powerful, and convenient
@@ -1090,7 +1090,7 @@ structure holding the pointer, length, and capacity) is passed by value.
 </p>
 
 
-<h3 id="maps">Maps</h3>
+<h3 id="maps">Maps 字典</h3>
 
 <p>
 Maps are a convenient and powerful built-in data structure to associate
@@ -1166,7 +1166,7 @@ from the map.
 <pre>
 timeZone["PDT"] = 0, false  // Now on Standard Time
 </pre>
-<h3 id="printing">Printing</h3>
+<h3 id="printing">Printing 打印</h3>
 
 <p>
 Formatted printing in Go uses a style similar to C's <code>printf</code>
@@ -1319,7 +1319,7 @@ There's even more to printing than we've covered here.  See the <code>godoc</cod
 for package <code>fmt</code> for the details.
 </p>
 
-<h2 id="initialization">Initialization</h2>
+<h2 id="initialization">Initialization 初始化</h2>
 
 <p>
 Although it doesn't look superficially very different from
@@ -1329,7 +1329,7 @@ issues between initialized objects in different packages are handled
 correctly.
 </p>
 
-<h3 id="constants">Constants</h3>
+<h3 id="constants">Constants 常量初始化</h3>
 
 <p>
 Constants in Go are just that&mdash;constant.
@@ -1398,7 +1398,7 @@ The expression <code>YB</code> prints as <code>1.00YB</code>,
 while <code>ByteSize(1e13)</code> prints as <code>9.09TB</code>,
 </p>
 
-<h3 id="variables">Variables</h3>
+<h3 id="variables">Variables 变量初始化</h3>
 
 <p>
 Variables can be initialized just like constants but the
@@ -1412,7 +1412,7 @@ var (
 )
 </pre>
 
-<h3 id="init">The init function</h3>
+<h3 id="init">The init function init函数</h3>
 
 <p>
 Finally, each source file can define its own <code>init()</code> function to
@@ -1447,9 +1447,9 @@ func init() {
 }
 </pre>
 
-<h2 id="methods">Methods</h2>
+<h2 id="methods">Methods 方法</h2>
 
-<h3 id="pointers_vs_values">Pointers vs. Values</h3>
+<h3 id="pointers_vs_values">Pointers vs. Values 指针vs值</h3>
 <p>
 Methods can be defined for any named type that is not a pointer or an interface;
 the receiver does not have to be a struct.
@@ -1514,9 +1514,9 @@ By the way, the idea of using <code>Write</code> on a slice of bytes
 is implemented by <code>bytes.Buffer</code>.
 </p>
 
-<h2 id="interfaces_and_types">Interfaces and other types</h2>
+<h2 id="interfaces_and_types">Interfaces and other types 接口和其他类型</h2>
 
-<h3 id="interfaces">Interfaces</h3>
+<h3 id="interfaces">Interfaces 接口</h3>
 <p>
 Interfaces in Go provide a way to specify the behavior of an
 object: if something can do <em>this</em>, then it can be used
@@ -1677,7 +1677,7 @@ calls must be edited, but because the surrounding code must treat the result onl
 as an <code>io.Reader</code>, it won't notice the difference.
 </p>
 
-<h3 id="interface_methods">Interfaces and methods</h3>
+<h3 id="interface_methods">Interfaces and methods 接口和方法</h3>
 <p>
 Since almost anything can have methods attached, almost anything can
 satisfy an interface.  One illustrative example is in the <code>http</code>
@@ -1819,7 +1819,7 @@ a channel, and a function, all because interfaces are just sets of
 methods, which can be defined for (almost) any type.
 </p>
 
-<h2 id="embedding">Embedding</h2>
+<h2 id="embedding">Embedding 组合</h2>
 
 <p>
 Go does not provide the typical, type-driven notion of subclassing,
@@ -1979,7 +1979,7 @@ is ever used.
 </p>
 
 
-<h2 id="concurrency">Concurrency</h2>
+<h2 id="concurrency">Concurrency 并发</h2>
 
 <h3 id="sharing">Share by communicating</h3>
 
@@ -2326,7 +2326,7 @@ in just a few lines, relying on the buffered channel and
 the garbage collector for bookkeeping.
 </p>
 
-<h2 id="errors">Errors</h2>
+<h2 id="errors">Errors 错误处理</h2>
 
 <p>
 Library routines must often return some sort of error indication to
@@ -2396,7 +2396,7 @@ for try := 0; try &lt; 2; try++ {
 }
 </pre>
 
-<h2 id="web_server">A web server</h2>
+<h2 id="web_server">A web server Web服务器</h2>
 
 <p>
 Let's finish with a complete Go program, a web server.
