@@ -992,11 +992,13 @@ Thus you can call "Fprintf" on any type that implements a standard "Write()"
 method, not just files but also network channels, buffers, whatever
 you want.
 
-Prime numbers
+Prime numbers 生成素数
 ----
 
 Now we come to processes and communication&mdash;concurrent programming.
 It's a big subject so to be brief we assume some familiarity with the topic.
+
+这里我们要给出一个并行处理程序及之间的通信。这是一个非常大的课题，我们这里只是给出一些要点。
 
 A classic program in the style is a prime sieve.
 (The sieve of Eratosthenes is computationally more efficient than
@@ -1008,9 +1010,15 @@ that prime.  At each step we have a sequence of filters of the primes
 so far, and the next number to pop out is the next prime, which triggers
 the creation of the next filter in the chain.
 
+素数筛选是一个比较经典的问题（这里侧重于Eratosthenes素数筛选算法的并行特征）。它以全部的
+自然后为筛选对象。首选从第一个素数2开始，后续数列中是已经素数倍数的数去掉。每次筛选可以得到
+一个新的素数，然后将新的素数加入筛选器，继续筛选后面的自然数列（这里要参考算法的描述调整）。
+
 Here's a flow diagram; each box represents a filter element whose
 creation is triggered by the first number that flowed from the
 elements before it.
+
+这里是算法工作的原理图。每个框对应一个素数筛选器，并且将剩下的数列传给下一个素数筛进行筛选。
 
 <br>
 
@@ -1025,7 +1033,12 @@ In Go, channel variables are references to a run-time object that
 coordinates the communication; as with maps and slices, use
 "make" to create a new channel.
 
+为了产生整数序列，我们使用<i>管道</i>。管道可以用于连接两个并行的处理单。在Go语言中，
+管道由运行时库管理，可以用"make"来创建新的管道。
+
 Here is the first function in "progs/sieve.go":
+
+这是"progs/sieve.go"程序的第一个函数：
 
 --PROG progs/sieve.go /Send/ /^}/
 
@@ -1033,6 +1046,8 @@ The "generate" function sends the sequence 2, 3, 4, 5, ... to its
 argument channel, "ch", using the binary communications operator "&lt;-".
 Channel operations block, so if there's no recipient for the value on "ch",
 the send operation will wait until one becomes available.
+
+函数"generate"用于生成2, 3, 4, 5, ...自然数序列，然后发送到管道。
 
 The "filter" function has three arguments: an input channel, an output
 channel, and a prime number.  It copies values from the input to the
@@ -1087,18 +1102,25 @@ after "generate" returns.
 
 The same change can be made to "filter":
 
+这里我们采用过滤器"filter"来筛选后面的素数：
+
 --PROG progs/sieve1.go /func.filter/ /^}/
 
 The "sieve" function's main loop becomes simpler and clearer as a
 result, and while we're at it let's turn it into a factory too:
 
+函数"sieve"对应处理的一个主循环，它只是依次将数列交给后面的素数筛选器进行筛选。
+如果遇到新的素数，再输出素数后以该素数创建信的筛选器。
+
 --PROG progs/sieve1.go /func.sieve/ /^}/
 
 Now "main"'s interface to the prime sieve is a channel of primes:
 
+主函数入口启动素数生成服务器，然后打印从管道输出的素数：
+
 --PROG progs/sieve1.go /func.main/ /^}/
 
-Multiplexing
+Multiplexing 通信
 ----
 
 With channels, it's possible to serve multiple independent client goroutines without
@@ -1108,23 +1130,38 @@ A realistic client-server program is a lot of code, so here is a very simple sub
 to illustrate the idea.  It starts by defining a "request" type, which embeds a channel
 that will be used for the reply.
 
+基于管道，我们可以很容易实现一个支持多路客户端的服务器程序。采用的技巧是将每个客户端私有的通信管道
+作为消息的一部分发送给服务器，然后服务器通过这些管道和客户端独立通信。现实中的服务器实现都很复杂，
+我们这里只给出一个服务器的简单实现来展现前面描述的技巧。首先定义一个"request"类型，里面包含一个
+客户端的通信管道。
+
 --PROG progs/server.go /type.request/ /^}/
 
 The server will be trivial: it will do simple binary operations on integers.  Here's the
 code that invokes the operation and responds to the request:
+
+服务器对客户端发送过来的两个整数进行运算。下面是具体的函数，函数在运算完之后将结构通过结构中的
+管道返回给客户端。
 
 --PROG progs/server.go /type.binOp/ /^}/
 
 Line 14 defines the name "binOp" to be a function taking two integers and
 returning a third.
 
+第14行现定义一个"binOp"函数类型，用于对两个整数进行运算。
+
 The "server" routine loops forever, receiving requests and, to avoid blocking due to
 a long-running operation, starting a goroutine to do the actual work.
+
+服务器routine线程是一个无限循环，它接受客户端请求。然后为每个客户端启动一个独立的routine线程，
+用于处理客户数据（不会被某个客户端阻塞）。
 
 --PROG progs/server.go /func.server/ /^}/
 
 We construct a server in a familiar way, starting it and returning a channel
 connected to it:
+
+启动服务器的方法也是一个类似的routine线程，然后返回服务器的请求管道。
 
 --PROG progs/server.go /func.startServer/ /^}/
 
@@ -1132,15 +1169,23 @@ Here's a simple test.  It starts a server with an addition operator and sends ou
 "N" requests without waiting for the replies.  Only after all the requests are sent
 does it check the results.
 
+这里是一个简单的测试。首先启动服务器，处理函数为计算两个整数的和。接着向服务器发送"N"个请求（无阻塞）。
+当所有请求都发送完了之后，再进行验证返回结果。
+
 --PROG progs/server.go /func.main/ /^}/
 
 One annoyance with this program is that it doesn't shut down the server cleanly; when "main" returns
 there are a number of lingering goroutines blocked on communication.  To solve this,
 we can provide a second, "quit" channel to the server:
 
+前面的服务器程序有个小问题：当main函数退出之后，服务器没有关闭，而且可能有一些客户端被阻塞在
+管道通信中。为了处理这个问题，我们可给服务器增加一个控制管道，用于退出服务器。
+
 --PROG progs/server1.go /func.startServer/ /^}/
 
 It passes the quit channel to the "server" function, which uses it like this:
+
+首先给"server"函数增加一个控制管道参数，然后这样使用：
 
 --PROG progs/server1.go /func.server/ /^}/
 
@@ -1150,9 +1195,14 @@ multiple can proceed, it chooses one at random.  In this instance, the "select" 
 the server to honor requests until it receives a quit message, at which point it
 returns, terminating its execution.
 
+在服务器函数中，"select"操作服用于从多个通讯管道中选择一个就绪的管道。如果所有的管道都没有数据，
+那么将等待知道有任意一个管道有数据。如果有多个管道就绪，则随即选择一个。服务器处理客户端请求，如果
+有退出消息则退出。
 
 All that's left is to strobe the "quit" channel
 at the end of main:
+
+最后是在main函数中保存"quit"管道，然后在退出的时候向服务线程发送停止命令。
 
 --PROG progs/server1.go /adder,.quit/
 ...
@@ -1160,5 +1210,7 @@ at the end of main:
 
 There's a lot more to Go programming and concurrent programming in general but this
 quick tour should give you some of the basics.
+
+当然，Go语言及并行编程要讨论的问题很多。这个入门只是给出一些简单的例子。
 
 
