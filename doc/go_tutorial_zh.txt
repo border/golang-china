@@ -849,32 +849,42 @@ Interfaces provide a simple form of polymorphism.  They completely
 separate the definition of what an object does from how it does it, allowing
 distinct implementations to be represented at different times by the
 same interface variable.
+接口(interfaces)提供了一个简单形式的多态(polymorphism). 他们把对象的定义和
+如何实现的分开处理，允许相同的接口可以有不能的实现方法。
 
 As an example, consider this simple sort algorithm taken from "progs/sort.go":
+参考这个简单的排序算法(sort algorithm)"progs/sort.go"
 
 --PROG progs/sort.go /func.Sort/ /^}/
 
 The code needs only three methods, which we wrap into sort's "Interface":
+我们要封装这个排序(sort)的接口(interface)仅需要三个方法。
 
 --PROG progs/sort.go /interface/ /^}/
 
 We can apply "Sort" to any type that implements "Len", "Less", and "Swap".
 The "sort" package includes the necessary methods to allow sorting of
 arrays of integers, strings, etc.; here's the code for arrays of "int"
+我们可以用任何类型的"Sort"去实现"Len", "Less" 和 "Swap". 这个"sort"包里面
+包含一些方法(methods). 下面是整型数组的代码: 
 
 --PROG progs/sort.go /type.*IntArray/ /Swap/
 
 Here we see methods defined for non-"struct" types.  You can define methods
 for any type you define and name in your package.
+你看到的是一个没有任何类型的"结构体"(non-struct type). 在你的包里面你可以定义
+任何你想定义的类型.
 
 And now a routine to test it out, from "progs/sortmain.go".  This
 uses a function in the "sort" package, omitted here for brevity,
 to test that the result is sorted.
+现在用"progs/sortmain.go"程序进行测试，用"sort"包里面的排序函数进行排序。
 
 --PROG progs/sortmain.go /func.ints/ /^}/
 
 If we have a new type we want to be able to sort, all we need to do is
 to implement the three methods for that type, like this:
+如果我们为sort提供一个新类型，我们就需要为这个类型实现三个方法，如下:
 
 --PROG progs/sortmain.go /type.day/ /Swap/
 
