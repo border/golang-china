@@ -1,0 +1,339 @@
+<!-- Installing Go -->
+
+<h2>Introduction</h2>
+
+<p>Go is an open source project, distributed under a
+<a href="/LICENSE">BSD-style license</a>.
+This document explains how to check out the sources,
+build them on your own machine, and run them.
+</p>
+
+<p>
+There are two distinct ways to experiment with Go.
+This document focuses on the <code>gc</code> Go
+compiler and tools (<code>6g</code>, <code>8g</code> etc.).
+For information on how to use <code>gccgo</code>, a more traditional
+compiler using the GCC back end, see
+<a href="gccgo_install.html">Setting up and using gccgo</a>.
+</p>
+
+<h2>Environment variables</h2>
+
+<p>The Go compilation environment depends on three environment
+variables that you should set in your <code>.bashrc</code> or equivalent,
+plus one optional variable:</p>
+
+<dl>
+<dt>
+	<code>$GOROOT</code>
+</dt>
+<dd>The root of the Go tree.  Typically this is <code>$HOME/go</code>
+	but it can be any directory.
+</dd>
+
+<dt>
+<code>$GOOS</code> and <code>$GOARCH</code>
+</dt>
+<dd>
+	The name of the target operating system and compilation architecture.
+	Choices for <code>$GOOS</code> are <code>linux</code>,
+	<code>freebsd</code>,
+	<code>darwin</code> (Mac OS X 10.5 or 10.6),
+	and <code>nacl</code> (Native Client, an incomplete port).
+	Choices for <code>$GOARCH</code> are <code>amd64</code> (64-bit x86, the most mature port),
+	<code>386</code> (32-bit x86), and
+	<code>arm</code> (32-bit ARM, an incomplete port).
+	The valid combinations of <code>$GOOS</code> and <code>$GOARCH</code> are:
+	<p>
+	<table cellpadding="0">
+	<tr>
+	<th width="50"><th align="left" width="100"><code>$GOOS</code></th> <th align="left" width="100"><code>$GOARCH</code></th>
+	</tr>
+	<tr>
+	<td></td><td><code>darwin</code></td> <td><code>386</code></td>
+	</tr>
+	<tr>
+	<td></td><td><code>darwin</code></td> <td><code>amd64</code></td>
+	</tr>
+	<tr>
+	<td></td><td><code>freebsd</code></td> <td><code>386</code></td>
+	</tr>
+	<tr>
+	<td></td><td><code>freebsd</code></td> <td><code>amd64</code></td>
+	</tr>
+	<tr>
+	<td></td><td><code>linux</code></td> <td><code>386</code></td>
+	</tr>
+	<tr>
+	<td></td><td><code>linux</code></td> <td><code>amd64</code></td>
+	</tr>
+	<tr>
+	<td></td><td><code>linux</code></td> <td><code>arm</code></td>
+	</tr>
+	<tr>
+	<td></td><td><code>nacl</code></td> <td><code>386</code></td>
+	</tr>
+	</table>
+	<p>
+</dd>
+
+<dt>
+<code>$GOBIN</code> (optional)
+</dt>
+<dd>
+	The location where binaries will be installed.
+	The default is <code>$HOME/bin</code>.
+	After installing, you will want to arrange to add this
+	directory to your <code>$PATH</code>, so you can use the tools.
+</dd>
+</dl>
+
+<p>
+Note that <code>$GOARCH</code> and <code>$GOOS</code> identify the
+<em>target</em> environment, not the environment you are running on.
+In effect, you are always cross-compiling.
+</p>
+
+<p>
+Set these variables in your <code>.bashrc</code>.  For example:
+</p>
+
+<pre>
+export GOROOT=$HOME/go
+export GOARCH=amd64
+export GOOS=linux
+</pre>
+
+<p>
+Double-check them by listing your environment.
+</p>
+
+<pre>
+$ env | grep '^GO'
+</pre>
+
+<h2>Ports</h2>
+
+<p>
+Go compilers support two operating systems (Linux, Mac OS X) and
+three instruction sets.
+The versions for Linux and Mac are equally capable except that the ARM port
+does not run on OS X (yet).
+</p>
+<p>
+There are important differences in the quality of the compilers for the different
+architectures.
+</p>
+
+<dl>
+<dt>
+	<code>amd64</code> (a.k.a. <code>x86-64</code>); <code>6g,6l,6c,6a</code>
+</dt>
+<dd>
+	The most mature implementation.  The compiler has an effective optimizer
+	(registerizer) and generates good code (although <code>gccgo</code>
+	can do noticeably better sometimes).
+</dd>
+<dt>
+	<code>386</code> (a.k.a. <code>x86</code> or <code>x86-32</code>); <code>8g,8l,8c,8a</code>
+</dt>
+<dd>
+	Comparable to the <code>amd64</code> port. Not as well soaked but
+	should be nearly as solid.
+
+</dd>
+<dt>
+	<code>arm</code> (a.k.a. <code>ARM</code>); <code>5g,5l,5c,5a</code>
+</dt>
+<dd>
+	It's got a couple of outstanding bugs but is improving. Tested against QEMU
+	and an android phone.
+</dd>
+</dl>
+
+<p>
+Except for things like low-level operating system interface code, the runtime
+support is the same in all ports and includes a mark-and-sweep garbage collector
+(a fancier one is in the works), efficient array and string slicing,
+support for segmented stacks, and a strong goroutine implementation.
+</p>
+
+<p>
+See the separate <a href="gccgo_install.html"><code>gccgo</code> document</a>
+for details about that compiler and environment.
+</p>
+
+<h2>Fetch the repository</h2>
+
+<p>
+If you do not have Mercurial installed (you do not have an <code>hg</code> command),
+this command:
+</p>
+
+<pre>
+$ sudo easy_install mercurial
+</pre>
+
+<p>works on most systems.
+(On Ubuntu, you might try <code>apt-get install python-setuptools python-dev</code> first.)
+If that fails, visit the <a href="http://mercurial.selenic.com/wiki/Download">Mercurial Download</a> page.</p>
+
+<p>Make sure the <code>$GOROOT</code> directory does not exist or is empty.
+Then check out the repository:</p>
+
+<pre>
+$ hg clone -r release https://go.googlecode.com/hg/ $GOROOT
+</pre>
+
+<h2>Install Go</h2>
+
+<p>The Go tool chain is written in C.  To build it, you need
+to have GCC, the standard C libraries, the parser generator Bison,
+<tt>make</tt>, <tt>awk</tt>, and the text editor <tt>ed</tt> installed.  On OS X, they can be
+installed as part of
+<a href="http://developer.apple.com/TOOLS/Xcode/">Xcode</a>.  On Linux,
+</p>
+
+<pre>
+$ sudo apt-get install bison gcc libc6-dev ed gawk make
+</pre>
+
+<p>
+(or the equivalent on your Linux distribution).
+</p>
+
+<p>
+To build the Go distribution, run
+</p>
+
+<pre>
+$ cd $GOROOT/src
+$ ./all.bash
+</pre>
+
+<p>
+If all goes well, it will finish by printing
+</p>
+
+<pre>
+--- cd ../test
+N known bugs; 0 unexpected bugs
+</pre>
+
+<p>
+where <var>N</var> is a number that varies from release to release.
+</p>
+
+<h2>Writing programs</h2>
+
+<p>
+Given a file <code>file.go</code>, compile it using
+</p>
+
+<pre>
+$ 6g file.go
+</pre>
+
+<p>
+<code>6g</code> is the Go compiler for <code>amd64</code>; it will write the output
+in <code>file.6</code>. The &lsquo;<code>6</code>&rsquo; identifies
+files for the <code>amd64</code> architecture.
+The identifier letters for <code>386</code> and <code>arm</code>
+are &lsquo;<code>8</code>&rsquo; and &lsquo;<code>5</code>&rsquo;.
+That is, if you were compiling for <code>386</code>, you would use
+<code>8g</code> and the output would be named <code>file.8</code>.
+</p>
+
+<p>
+To link the file, use
+</p>
+
+<pre>
+$ 6l file.6
+</pre>
+
+<p>
+and to run it
+</p>
+
+<pre>
+$ ./6.out
+</pre>
+
+<p>A complete example:
+</p>
+
+<pre>
+$ cat &gt;hello.go &lt;&lt;EOF
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Printf("hello, world\n")
+}
+EOF
+$ 6g hello.go
+$ 6l hello.6
+$ ./6.out
+hello, world
+$
+</pre>
+
+<p>
+There is no need to list <code>hello.6</code>'s package dependencies
+(in this case, package <code>fmt</code>) on the <code>6l</code>
+command line.
+The linker learns about them by reading <code>hello.6</code>.
+</p>
+
+<p>
+To build more complicated programs, you will probably
+want to use a
+<code>Makefile</code>.
+There are examples in places like
+<code>$GOROOT/src/cmd/godoc/Makefile</code>
+and <code>$GOROOT/src/pkg/*/Makefile</code>.
+The
+<a href="contribute.html">document</a>
+about contributing to the Go project
+gives more detail about
+the process of building and testing Go programs.
+</p>
+
+<h2>Keeping up with releases</h2>
+
+<p>New releases are announced on the <a href="http://groups.google.com/group/golang-nuts">Go Nuts</a> mailing list.
+To update an existing tree to the latest release, you can run:
+</p>
+
+<pre>
+$ cd $GOROOT/src
+$ hg pull
+$ hg update release
+$ make all
+</pre>
+
+<h2>Community resources</h2>
+
+<p>
+For real-time help, there may be users or developers on
+<code>#go-nuts</code> on the <a href="http://freenode.net/">Freenode</a> IRC server.
+</p>
+
+<p>
+The official mailing list for discussion of the Go language is
+<a href="http://groups.google.com/group/golang-nuts">Go Nuts</a>.
+</p>
+
+<p>
+Bugs can be reported using the <a href="http://code.google.com/p/go/issues/list">Go issue tracker</a>.
+</p>
+
+<p>
+For those who wish to keep up with development,
+there is another mailing list, <a href="http://groups.google.com/group/golang-checkins">golang-checkins</a>,
+that receives a message summarizing each checkin to the Go repository.
+</p>
+
+
