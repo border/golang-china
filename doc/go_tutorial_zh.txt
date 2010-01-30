@@ -889,15 +889,20 @@ to implement the three methods for that type, like this:
 --PROG progs/sortmain.go /type.day/ /Swap/
 
 
-Printing
+Printing 打印
 ----
 
 The examples of formatted printing so far have been modest.  In this section
 we'll talk about how formatted I/O can be done well in Go.
 
+前面例子中涉及到的打印都比较简单。在这一节中，我们将要讨论Go语言格式化输出的功能。
+
 We've seen simple uses of the package "fmt", which
 implements "Printf", "Fprintf", and so on.
 Within the "fmt" package, "Printf" is declared with this signature:
+
+我们已经用过"fmt"包中的"Printf"和"Fprintf"等输出函数。"fmt"包中的"Printf"函数的
+完整说明如下：
 
 	Printf(format string, v ...) (n int, errno os.Error)
 
@@ -909,10 +914,18 @@ reflection helps explain some of the nice properties of Go's "Printf",
 due to the ability of "Printf" to discover the type of its arguments
 dynamically.
 
+其中"..."表示数目可变参数，和C语言中"stdarg.h"中的宏类似。不过Go中，可变参数是通道
+一个空接口（"interface {}"）和反射（reflection）库实现的。反射特性可以帮助"Printf"
+函数很好的获取参数的详细特征。
+
 For example, in C each format must correspond to the type of its
 argument.  It's easier in many cases in Go.  Instead of "%llud" you
 can just say "%d"; "Printf" knows the size and signedness of the
 integer and can do the right thing for you.  The snippet
+
+在C语言中，printf函数的要格式化的参数类型必须和格式化字符串中的标志一致。不过在Go语言中，
+这些细节都被简化了。我们不再需要"%llud"之类的标志，只用"%d"表示要输出一个整数。至于对应
+参数的实际类型，"Printf"可以通过反射获取。例如：
 
 --PROG progs/print.go 'NR==10' 'NR==11'
 
@@ -923,9 +936,11 @@ prints
 In fact, if you're lazy the format "%v" will print, in a simple
 appropriate style, any value, even an array or structure.  The output of
 
+最简单的方法是用"%v"标志，它可以以适当的格式输出任意的类型（包括数组和结构）。下面的程序，
+
 --PROG progs/print.go 'NR==14' 'NR==20'
 
-is
+is 将输出：
 
 	18446744073709551615 {77 Sunset Strip} [1 2 3 4]
 
@@ -936,6 +951,10 @@ of "%v" while "Println" inserts spaces between arguments
 and adds a newline.  The output of each of these two lines is identical
 to that of the "Printf" call above.
 
+如果是使用"Print"或"Println"函数的话，甚至不需要格式化字符串。这些函数会针对数据类型
+自动作转换。"Print"函数默认将每个参数以"%v"格式输出，"Println"函数则是在"Print"函数
+的输出基础上增加一个换行。一下两种输出方式和前面的输出结果是一致的。
+
 --PROG progs/print.go 'NR==21' 'NR==22'
 
 If you have your own type you'd like "Printf" or "Print" to format,
@@ -944,10 +963,16 @@ routines will examine the value to inquire whether it implements
 the method and if so, use it rather than some other formatting.
 Here's a simple example.
 
+如果要用"Printf"或"Print"函数输出似有的结构类型，之需要为该结构实现一个"String()"方法，
+返回相应的字符串就可以了。打印函数会先检测该类型是否实现了"String()"方法，如果实现了则以
+该方法返回字符串作为输出。下面是一个简单的例子。
+
 --PROG progs/print_string.go 'NR==9' END
 
 Since "*testType" has a "String()" method, the
 default formatter for that type will use it and produce the output
+
+因为"*testType"类型有"String()"方法，因此格式化函数用它作为输出结果：
 
 	77 Sunset Strip
 
@@ -955,18 +980,30 @@ Observe that the "String()" method calls "Sprint" (the obvious Go
 variant that returns a string) to do its formatting; special formatters
 can use the "fmt" library recursively.
 
+前面的例子中，"String()"方法用到了"Sprint"（从字面意思可以猜测函数将返回一个字符串）
+作为格式化的基础函数。在Go中，我们可以递归使用"fmt"库中的函数来为格式化服务。
+
 Another feature of "Printf" is that the format "%T" will print a string
 representation of the type of a value, which can be handy when debugging
 polymorphic code.
+
+"Printf"函数的另一种输出是"%T"格式，它输出的内容更加详细，可以作为调试信息用。
 
 It's possible to write full custom print formats with flags and precisions
 and such, but that's getting a little off the main thread so we'll leave it
 as an exploration exercise.
 
+自己实现一个功能完备，可以输出各种格式和精度的函数是可能的。不过这不是该教程的重点，大家
+可以把它当作一个课后练习。
+
 You might ask, though, how "Printf" can tell whether a type implements
 the "String()" method.  Actually what it does is ask if the value can
 be converted to an interface variable that implements the method.
 Schematically, given a value "v", it does this:
+
+读者可能有疑问，"Printf"函数是如何知道变量是否有"String()"函数实现的。实际上，我们
+需要先将变量转换为Stringer接口类型，如果转换成功则表示有"String()"方法。下面是一个
+演示的例子：
 
 
 	type Stringer interface {
@@ -989,13 +1026,22 @@ operations such as type conversion, map update, communications, and so on,
 although this is the only appearance in this tutorial.)
 If the value does not satisfy the interface, "ok" will be false.
 
+这里用到了类型断言("v.(Stringer)")，用来判断变量"v"是否可以满足"Stringer"接口。
+如果满足，"s"将对应转换后的Stringer接口类型并且"ok"被设置为"true"。然后我们通过"s"，
+以Stringer接口的方式调用String()函数。如果不满足该接口特征，"ok"将被设置为false。
+
 In this snippet the name "Stringer" follows the convention that we add ''[e]r''
 to interfaces describing simple method sets like this.
+
+"Stringer"接口的命名通常是在接口方法的名字后面加''[e]r''后缀，这里是"String+er"。
 
 One last wrinkle.  To complete the suite, besides "Printf" etc. and "Sprintf"
 etc., there are also "Fprintf" etc.  Unlike in C, "Fprintf"'s first argument is
 not a file.  Instead, it is a variable of type "io.Writer", which is an
 interface type defined in the "io" library:
+
+Go中的打印函数，除了"Printf"和"Sprintf"等之外，还有一个"Fprintf"函数。不过"Fprintf"函数和
+的第一个参数并不是一个文件，而是一个在"io"库中定义的接口类型：
 
 	type Writer interface {
 		Write(p []byte) (n int, err os.Error);
@@ -1006,6 +1052,9 @@ interface type defined in the "io" library:
 Thus you can call "Fprintf" on any type that implements a standard "Write()"
 method, not just files but also network channels, buffers, whatever
 you want.
+
+这里的接口也是采用类似的命名习惯，类型的接口还有"io.Reader"和"io.ReadWriter"等。
+在调用"Fprintf"函数时，可以用实现了"Write"方法的任意类型变量作为参数，例如文件、网络、管道等等。
 
 Prime numbers 生成素数
 ----
