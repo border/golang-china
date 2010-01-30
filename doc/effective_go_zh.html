@@ -1,4 +1,13 @@
 <!-- Effective Go -->
+<p>
+<h2>译者</h2>
+<p>
+<pre>
+    原文：<a href='http://golang.org/effective_go.html'>http://golang.org/effective_go.html</a>
+    翻译：<a href='http://chaishushan.blog.163.com'>柴树杉</a> <a href='mailto:chaishushan@gmail.com'>(chaishushan@gmail.com)</a>
+    翻译：<a href='http://www.wifihack.net/'>Bian Jiang</a> <a href='mailto:borderj@gmail.com'>(borderj@gmail.com)</a>
+</pre>
+<p>
 
 <h2 id="introduction">Introduction 简介</h2>
 
@@ -23,10 +32,24 @@ will be easy for other Go programmers to understand.
 </p>
 
 <p>
+Go是一个新的语言。虽然它从其他语言中借鉴了一些特性，但是Go语言的编程方式和其他是
+有本质却别的。如果只是简单的将C++或Java等代码翻译为Go代码是不可能得到最优的Go代码的。
+java程序员用java的思维方式编程，并不是Go的思维方式。如果采用go的思维方式，一个问题
+可能有完全不同的解决方法。因此，如果要真正的用好Go语言，理解它的语言特性和设计思想是
+很重要的。另外，还要知道Go语言的变成风格，例如命名方式、格式化、程序结构等等，采用通用
+的方式也便于和其他的Go程序员交流。
+</p>
+
+<p>
 This document gives tips for writing clear, idiomatic Go code.
 It augments the <a href="go_spec.html">language specification</a>
 and the <a href="go_tutorial.html">tutorial</a>, both of which you
 should read first.
+</p>
+
+<p>
+该文档对于如何编写清晰优雅的Go程序给出一些建议。它是<a href="go_spec.html">Go语法说明</a>
+和<a href="go_tutorial.html">Go语言入门教程</a>的补充。
 </p>
 
 <h3 id="read">Examples 例子</h3>
@@ -39,6 +62,11 @@ use the language.
 If you have a question about how to approach a problem or how something
 might be implemented, they can provide answers, ideas and
 background.
+</p>
+
+<p>
+<a href="/src/pkg/">Go源代码</a>不仅包含了核心库的实现，还有很多如何使用语言的例子。
+如果在使用go的过程中遇到问题，或者想了解某些库的内部工作机制，可以直接参考源代码找到答案。
 </p>
 
 
@@ -56,6 +84,11 @@ prescriptive style guide.
 </p>
 
 <p>
+格式化是一个最有争议的问题。虽然人可以适应各种不同的风格，不过如果大家都遵循一个默认统一的
+风格是最理想的。当然，这也是一个仁者见仁、智者见智的问题，不可能有一个终极的理想答案。
+</p>
+
+<p>
 With Go we take an unusual
 approach and let the machine
 take care of most formatting issues.
@@ -67,12 +100,23 @@ If you want to know how to handle some new layout
 situation, run <code>gofmt</code>; if the answer doesn't
 seem right, fix the program (or file a bug), don't work around it.
 </p>
+<p>
+
+对于Go语言，我们采用不同的处理方法：让机器处理绝大部分的格式化工作。工具程序
+<code>gofmt</code>可以根据需要将Go代码格式自动格式化为统一的风格。如果你想
+了解格式化后代码的所进方式，你可以直接运行<code>gofmt</code>，然后查看输出结果。
+</p>
 
 <p>
 As an example, there's no need to spend time lining up
 the comments on the fields of a structure.
 <code>Gofmt</code> will do that for you.  Given the
 declaration
+</p>
+
+<p>
+下面是一个例子，我们没有必要花时间手工调整类型中成员注释的对齐方式。<code>Gofmt</code>
+可以自动将注释对齐。下面是结果的定义：
 </p>
 
 <pre>
@@ -85,6 +129,10 @@ type T struct {
 <p>
 <code>gofmt</code> will line up the columns:
 </p>
+<p>
+<code>gofmt</code>处理后的结果:
+</p>
+
 
 <pre>
 type T struct {
@@ -96,32 +144,52 @@ type T struct {
 <p>
 All code in the libraries has been formatted with <code>gofmt</code>.
 </p>
+<p>
+Go语言库中的所有代码都是用<code>gofmt</code>工具格式化的。
+</p>
 
 
 <p>
 Some formatting details remain.  Very briefly,
 </p>
 
+<p>
+格式化的一些细节：
+</p>
+
 <dl>
-    <dt>Indentation</dt>
+    <dt>Indentation 缩进</dt>
     <dd>We use tabs for indentation and <code>gofmt</code> emits them by default.
     Use spaces only if you must.
     </dd>
-    <dt>Line length</dt>
+    <dd>我们使用tab缩进，<code>gofmt</code>也是默认用tab缩进。当然，也可以指定空白缩进。
+    </dd>
+    
+    <dt>Line length 每行长度</dt>
     <dd>
     Go has no line length limit.  Don't worry about overflowing a punched card.
     If a line feels too long, wrap it and indent with an extra tab.
     </dd>
-    <dt>Parentheses</dt>
+    <dd>
+    Go语言代码每行长度没有限制。不用担心一行的代码太长超出显式范围，<code>gofmt</code>会自动
+    处理太长的行。
+    </dd>
+    
+    <dt>Parentheses 括弧</dt>
     <dd>
     Go needs fewer parentheses: control structures (<code>if</code>,
     <code>for</code>, <code>switch</code>) do not require parentheses in
     their syntax.
     Also, the operator precedence hierarchy is shorter and clearer, so
-<pre>
-x&lt;&lt;8 + y&lt;&lt;16
-</pre>
+	<pre>x&lt;&lt;8 + y&lt;&lt;16</pre>
     means what the spacing implies.
+    </dd>
+    
+    <dd>
+    Go语言很少使用括弧：对于控制结构(<code>if</code>,<code>for</code>,<code>switch</code>)
+    括弧也不是必须的。而且Go中表达式中运算符的优先级比较简洁，例如下面代码：
+	<pre>x&lt;&lt;8 + y&lt;&lt;16</pre>
+	意思是x和y移位后相加。
     </dd>
 </dl>
 
@@ -133,6 +201,10 @@ and C++-style <code>//</code> line comments.
 Line comments are the norm;
 block comments appear mostly as package comments and
 are also useful to disable large swaths of code.
+</p>
+<p>
+Go支持C语言风格的<code>/* */</code>块注释，也支持C＋＋风格的<code>//</code>行注释。
+当然，行注释更通用，块注释主要用于针对包的详细说明或者屏蔽大块的代码。
 </p>
 
 <p>
