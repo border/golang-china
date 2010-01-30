@@ -437,12 +437,21 @@ unlike C, those semicolons do not appear in the source.
 Instead the lexer uses a simple rule to insert semicolons automatically
 as it scans, so the input text is mostly free of them.
 </p>
+<p>
+Go语言与C一样都是采用分号来结束一条语句，不一样的是，并不是所有的源码
+都要使用分号。Go是采用语法解析器自动在每行末增加分号，所有你在写代码的
+时候可以把分号缩略.
+</p>
 
 <p>
 The rule is this. If the last token before a newline is an identifier
 (which includes words like <code>int</code> and <code>float64</code>),
 a basic literal such as a number or string constant, or one of the
 tokens
+</p>
+<p>
+这个规则是: 如果一个标记(token)的前一行是标识符(identifier)(就像"int"或
+"float64"), 比如: 数字，一个字符串或一个标记.
 </p>
 <pre>
 break continue fallthrough return ++ -- ) }
@@ -452,10 +461,16 @@ the lexer always inserts a semicolon after the token.
 This could be summarized as, &ldquo;if the newline comes
 after a token that could end a statement, add a semicolon&rdquo;.
 </p>
+<p>
+那么语法解析器就会在标记的后面插入分号，也就是说"在标记的后面是个换行，这说明可能是语句的结束，就增加一个分号"。
+</p>
 
 <p>
 A semicolon can also be omitted immediately before a closing brace,
 so a statement such as
+</p>
+<p>
+在右括号之前可以省略分号，比如:
 </p>
 <pre>
     go func() { for { dst &lt;- &lt;-src } }()
@@ -467,6 +482,10 @@ Idiomatic Go programs have semicolons only in places such as
 continuation elements.  They are also necessary to separate multiple
 statements on a line, should you write code that way.
 </p>
+<p>
+不需要分号。在Go编程中只有几个地方需要增加分号， 比如: <code>for</code>循环
+为了把初始化，条件和遍历元素分开。还有在一行中有多条语句，也需要增加分号。
+</p>
 
 <p>
 One caveat. You should never put the opening brace of a
@@ -474,6 +493,12 @@ control structure (<code>if</code>, <code>for</code>, <code>switch</code>,
 or <code>select</code>) on the next line.  If you do, a semicolon
 will be inserted before the brace, which could cause unwanted
 effects.  Write them like this
+</p>
+<p>
+需要注意的是，你不能把控制语句(<code>if</code>, <code>for</code>, 
+<code>switch</code>, or <code>select</code>)左大括号单独方在一行，
+如果你这样作了在大括号之前将要插入一个分号，可能会造成不必要的麻烦，
+要写成:
 </p>
 
 <pre>
@@ -483,6 +508,9 @@ if i &lt; f() {
 </pre>
 <p>
 not like this
+</p>
+<p>
+不要写成
 </p>
 <pre>
 if i &lt; f()  // wrong!
