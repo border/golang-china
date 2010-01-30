@@ -1,11 +1,24 @@
-<!-- Installing Go -->
+<!-- Installing Go 安装 -->
+<p>
+<h2>译者</h2>
+<p>
+<pre>
+    原文：<a href='http://golang.org/install.html'>http://golang.org/install.html</a>
+    翻译：<a href='http://chaishushan.blog.163.com'>柴树杉</a> <a href='mailto:chaishushan@gmail.com'>(chaishushan@gmail.com)</a>
+    翻译：<a href='http://www.wifihack.net/'>Bian Jiang</a> <a href='mailto:borderj@gmail.com'>(borderj@gmail.com)</a>
+</pre>
+<p>
 
-<h2>Introduction</h2>
+<h2>Introduction 简介</h2>
 
 <p>Go is an open source project, distributed under a
 <a href="/LICENSE">BSD-style license</a>.
 This document explains how to check out the sources,
 build them on your own machine, and run them.
+</p>
+
+<p>Go是一个开源项目，采用<a href="/LICENSE">BSD授权协议</a>。
+该文档介绍如何获取Go源代码，如何编译，以及如何运行Go程序。
 </p>
 
 <p>
@@ -17,24 +30,35 @@ compiler using the GCC back end, see
 <a href="gccgo_install.html">Setting up and using gccgo</a>.
 </p>
 
-<h2>Environment variables</h2>
+<p>
+目前有两种方式使用Go语言。这里主要讲述如何使用Go专用的<code>gc</code>系列工具
+（<code>6g</code>、<code>8g</code>等）。另一个可选的编译器是是基于gcc后端的
+<code>gccgo</code>编译器。关于<code>gccgo</code>的细节清参考
+<a href="gccgo_install.html">安装并使用gccgo编译器</a>。
+</p>
+
+<h2>Environment variables 环境变量</h2>
 
 <p>The Go compilation environment depends on three environment
 variables that you should set in your <code>.bashrc</code> or equivalent,
 plus one optional variable:</p>
 
-<dl>
-<dt>
-	<code>$GOROOT</code>
-</dt>
-<dd>The root of the Go tree.  Typically this is <code>$HOME/go</code>
-	but it can be any directory.
-</dd>
+<p>Go编译器需要三个必须的环境变量和一个可选的环境变量。环境变量在<code>.bashrc</code>
+或其他配置文件中设置。</p>
 
-<dt>
-<code>$GOOS</code> and <code>$GOARCH</code>
-</dt>
-<dd>
+<dl>
+	<dt>
+		<code>$GOROOT</code>
+	</dt>
+	<dd>The root of the Go tree.  Typically this is <code>$HOME/go</code>
+	but it can be any directory.</dd>
+	<p>
+	
+	<dd>Go安装包的根目录。通常是放在<code>$HOME/go</code>，当然也可以是其他位置。</dd>
+	<p>
+
+	<dt><code>$GOOS</code> and 和 <code>$GOARCH</code></dt>
+	<dd>
 	The name of the target operating system and compilation architecture.
 	Choices for <code>$GOOS</code> are <code>linux</code>,
 	<code>freebsd</code>,
@@ -45,6 +69,15 @@ plus one optional variable:</p>
 	<code>arm</code> (32-bit ARM, an incomplete port).
 	The valid combinations of <code>$GOOS</code> and <code>$GOARCH</code> are:
 	<p>
+	
+	这两个环境变量表示目标代码的操作系统和CPU类型。<code>$GOOS</code>选项有<code>linux</code>、
+	<code>freebsd</code>、<code>darwin</code> (Mac OS X 10.5 or 10.6)和
+	<code>nacl</code> (Chrome的Native Client接口，还未完成)。<code>$GOARCH</code>的
+	选项有<code>amd64</code> (64-bit x86，目前最成熟)、<code>386</code> (32-bit x86)、
+	和<code>arm</code> (32-bit ARM，还未完成)。下面是<code>$GOOS</code>和
+	<code>$GOARCH</code>的可能组合：
+	<p>
+	
 	<table cellpadding="0">
 	<tr>
 	<th width="50"><th align="left" width="100"><code>$GOOS</code></th> <th align="left" width="100"><code>$GOARCH</code></th>
@@ -77,15 +110,19 @@ plus one optional variable:</p>
 	<p>
 </dd>
 
-<dt>
-<code>$GOBIN</code> (optional)
-</dt>
-<dd>
+	<dt><code>$GOBIN</code> (optional) （可选）</dt>
+	<dd>
 	The location where binaries will be installed.
 	The default is <code>$HOME/bin</code>.
 	After installing, you will want to arrange to add this
 	directory to your <code>$PATH</code>, so you can use the tools.
-</dd>
+	</dd>
+	<p>
+	<dd>
+	指明用于存放go的二进制程序目录。如果是没设置<code>$GOBIN</code>环境变量，
+	则默认是安装在<code>$HOME/bin</code>。如果设置了该变量，需要确保<code>$PATH</code>
+	变量也包含这个路径，这样编译器可以找到正确的执行文件。
+	</dd>
 </dl>
 
 <p>
@@ -95,7 +132,16 @@ In effect, you are always cross-compiling.
 </p>
 
 <p>
+需要说明的是<code>$GOARCH</code>和<code>$GOOS</code>环境变量表示的是目标代码
+运行环境，和当前使用的平台是无关的。这个对于交叉编译是很方便的。
+</p>
+
+<p>
 Set these variables in your <code>.bashrc</code>.  For example:
+</p>
+
+<p>
+在<code>.bashrc</code>文件中设置以下环境变量：
 </p>
 
 <pre>
@@ -107,12 +153,15 @@ export GOOS=linux
 <p>
 Double-check them by listing your environment.
 </p>
+<p>
+用以下命令再检测一次环境变量。
+</p>
 
 <pre>
 $ env | grep '^GO'
 </pre>
 
-<h2>Ports</h2>
+<h2>Ports 运行平台</h2>
 
 <p>
 Go compilers support two operating systems (Linux, Mac OS X) and
@@ -120,35 +169,56 @@ three instruction sets.
 The versions for Linux and Mac are equally capable except that the ARM port
 does not run on OS X (yet).
 </p>
+
+<p>
+Go目前支持两种操作系统三种类型CPU指令集。其中Linux和Mac平台可以通用，但是ARM目标代码还不能
+运行在OS X系统上。
+</p>
+
 <p>
 There are important differences in the quality of the compilers for the different
 architectures.
 </p>
 
+<p>
+下面是针对不同CPU指令集，编译后目标代码的差异：
+</p>
+
 <dl>
-<dt>
+	<dt>
 	<code>amd64</code> (a.k.a. <code>x86-64</code>); <code>6g,6l,6c,6a</code>
-</dt>
-<dd>
+	</dt>
+	<dd>
 	The most mature implementation.  The compiler has an effective optimizer
 	(registerizer) and generates good code (although <code>gccgo</code>
 	can do noticeably better sometimes).
-</dd>
-<dt>
+	</dd>
+	<dd>
+	目前最成熟的实现。编译器进行了很好的优化，可以产生更优的目标代码（尽管有时候<code>gccgo</code>
+	可能做的更好）。
+	</dd>
+
+	<dt>
 	<code>386</code> (a.k.a. <code>x86</code> or <code>x86-32</code>); <code>8g,8l,8c,8a</code>
-</dt>
-<dd>
+	</dt>
+	<dd>
 	Comparable to the <code>amd64</code> port. Not as well soaked but
 	should be nearly as solid.
-
-</dd>
-<dt>
+	</dd>
+	<dd>
+	虽然没有<code>amd64</code>平台那么成熟，但是已经非常稳定了。
+	</dd>
+	
+	<dt>
 	<code>arm</code> (a.k.a. <code>ARM</code>); <code>5g,5l,5c,5a</code>
-</dt>
-<dd>
+	</dt>
+	<dd>
 	It's got a couple of outstanding bugs but is improving. Tested against QEMU
 	and an android phone.
-</dd>
+	</dd>
+	<dd>
+	还有一些问题，还在完善中。重要针对QEMU和android手机环境测试。
+	</dd>
 </dl>
 
 <p>
@@ -159,15 +229,29 @@ support for segmented stacks, and a strong goroutine implementation.
 </p>
 
 <p>
+所有的平台，出了关于操作系统借口部分有一些差异外，Go的运行库支持都是一样的。包含基于
+mark-and-sweep算法（）的垃圾内存回收支持，高效的数组、字符串以及切片，还有独立的堆栈支持
+和goroutine的实现等。
+</p>
+
+<p>
 See the separate <a href="gccgo_install.html"><code>gccgo</code> document</a>
 for details about that compiler and environment.
 </p>
+<p>
+关于编译器和目标环境的细节还可以参考<a href="gccgo_install.html"><code>gccgo</code>安装</a>
+文档。
+</p>
 
-<h2>Fetch the repository</h2>
+<h2>Fetch the repository 获取代码</h2>
 
 <p>
 If you do not have Mercurial installed (you do not have an <code>hg</code> command),
 this command:
+</p>
+
+<p>
+如没你没有安装Mercurial版本管理系统（里面有需要的<code>hg</code>工具），用以下命令安装：
 </p>
 
 <pre>
@@ -178,20 +262,33 @@ $ sudo easy_install mercurial
 (On Ubuntu, you might try <code>apt-get install python-setuptools python-dev</code> first.)
 If that fails, visit the <a href="http://mercurial.selenic.com/wiki/Download">Mercurial Download</a> page.</p>
 
+<p>
+对于Ubuntu系统，可以现尝试<code>apt-get install python-setuptools python-dev</code>命令。
+如果安装还有问题的话，可以参考<a href="http://mercurial.selenic.com/wiki/Download">Mercurial</a>
+页面。</p>
+
 <p>Make sure the <code>$GOROOT</code> directory does not exist or is empty.
 Then check out the repository:</p>
+
+<p>确保<code>$GOROOT</code>不存在或者是空目录。然后从仓库检出代码：</p>
 
 <pre>
 $ hg clone -r release https://go.googlecode.com/hg/ $GOROOT
 </pre>
 
-<h2>Install Go</h2>
+<h2>Install Go 安装</h2>
 
 <p>The Go tool chain is written in C.  To build it, you need
 to have GCC, the standard C libraries, the parser generator Bison,
 <tt>make</tt>, <tt>awk</tt>, and the text editor <tt>ed</tt> installed.  On OS X, they can be
 installed as part of
 <a href="http://developer.apple.com/TOOLS/Xcode/">Xcode</a>.  On Linux,
+</p>
+
+<p>Go的工具链采用C语言编写。因此要编译Go工具，需要现安装GCC、C标准库、Bison分析器、
+以及<tt>make</tt>、<tt>awk</tt>和<tt>ed</tt>等开发工具。对于OS X系统，它们可以
+作为<a href="http://developer.apple.com/TOOLS/Xcode/">Xcode</a>的插件。
+对于Linux系统，可以用以下命令安装：
 </p>
 
 <pre>
@@ -201,9 +298,16 @@ $ sudo apt-get install bison gcc libc6-dev ed gawk make
 <p>
 (or the equivalent on your Linux distribution).
 </p>
+<p>
+（如果是其他Linux版本，可以用类似命令安装）。
+</p>
 
 <p>
 To build the Go distribution, run
+</p>
+
+<p>
+运行以下命令，构建Go：
 </p>
 
 <pre>
@@ -215,6 +319,10 @@ $ ./all.bash
 If all goes well, it will finish by printing
 </p>
 
+<p>
+编译完成后，结尾会打印以下信息。
+</p>
+
 <pre>
 --- cd ../test
 N known bugs; 0 unexpected bugs
@@ -224,10 +332,18 @@ N known bugs; 0 unexpected bugs
 where <var>N</var> is a number that varies from release to release.
 </p>
 
-<h2>Writing programs</h2>
+<p>
+其中<var>N</var>对于不同的版本会有差异。
+</p>
+
+<h2>Writing programs 编写代码</h2>
 
 <p>
 Given a file <code>file.go</code>, compile it using
+</p>
+
+<p>
+以<code>file.go</code>代码为例，用以下命令编译：
 </p>
 
 <pre>
@@ -245,7 +361,19 @@ That is, if you were compiling for <code>386</code>, you would use
 </p>
 
 <p>
+<code>6g</code>是针对<code>amd64</code>指令的编译器，它的输出文件为
+<code>file.6</code>。其中 &lsquo;<code>6</code>&rsquo; 表示文件是
+<code>amd64</code>指令的输出文件。如果是<code>386</code>和<code>arm</code>
+处理器，后缀则为 &lsquo;<code>8</code>&rsquo; 和 &lsquo;<code>5</code>&rsquo;。
+也就是说，如果你用的是<code>386</code>处理器，那么应该用<code>8g</code>命令编译，
+输出的文件为<code>file.8</code>。
+</p>
+
+<p>
 To link the file, use
+</p>
+<p>
+然后用以下命令连接：
 </p>
 
 <pre>
@@ -255,12 +383,17 @@ $ 6l file.6
 <p>
 and to run it
 </p>
+<p>
+运行程序：
+</p>
 
 <pre>
 $ ./6.out
 </pre>
 
 <p>A complete example:
+</p>
+<p>一个完整的例子：
 </p>
 
 <pre>
@@ -286,6 +419,10 @@ There is no need to list <code>hello.6</code>'s package dependencies
 command line.
 The linker learns about them by reading <code>hello.6</code>.
 </p>
+<p>
+在连接的时候，没有必要列出<code>hello.6</code>引用的包（这里用到了<code>fmt</code>包）。
+连接器（这里是<code>6l</code>）会自动从<code>hello.6</code>文件获取包的引用信息。
+</p>
 
 <p>
 To build more complicated programs, you will probably
@@ -301,10 +438,22 @@ gives more detail about
 the process of building and testing Go programs.
 </p>
 
-<h2>Keeping up with releases</h2>
+<p>
+如果是编译更复杂的过程，那么可能需要使用<code>Makefile</code>。相关的例子可以
+参考<code>$GOROOT/src/cmd/godoc/Makefile</code>和
+<code>$GOROOT/src/pkg/*/Makefile</code>。关于Go工程的更多说明清参考
+<a href="contribute.html">文档</a>。
+</p>
+
+<h2>Keeping up with releases 更新Go程序</h2>
 
 <p>New releases are announced on the <a href="http://groups.google.com/group/golang-nuts">Go Nuts</a> mailing list.
 To update an existing tree to the latest release, you can run:
+</p>
+
+<p>
+当有信版本发布的时候，会在<a href="http://groups.google.com/group/golang-nuts">Go Nuts</a>
+邮件列表中通知。可以用以下命令获取最新的发布版本：
 </p>
 
 <pre>
@@ -314,11 +463,16 @@ $ hg update release
 $ make all
 </pre>
 
-<h2>Community resources</h2>
+<h2>Community resources 社区资源</h2>
 
 <p>
 For real-time help, there may be users or developers on
 <code>#go-nuts</code> on the <a href="http://freenode.net/">Freenode</a> IRC server.
+</p>
+
+<p>
+在<a href="http://freenode.net/">Freenode</a> IRC 上，可能有很多<code>#go-nuts</code>的
+开发人员和用户，你可以获取即时的帮助。
 </p>
 
 <p>
@@ -327,13 +481,28 @@ The official mailing list for discussion of the Go language is
 </p>
 
 <p>
+还可以访问Go语言的官方邮件列表
+<a href="http://groups.google.com/group/golang-nuts">Go Nuts</a>。
+</p>
+
+<p>
 Bugs can be reported using the <a href="http://code.google.com/p/go/issues/list">Go issue tracker</a>.
+</p>
+
+<p>
+Bug可以在<a href="http://code.google.com/p/go/issues/list">Go issue tracker</a>提交。
 </p>
 
 <p>
 For those who wish to keep up with development,
 there is another mailing list, <a href="http://groups.google.com/group/golang-checkins">golang-checkins</a>,
 that receives a message summarizing each checkin to the Go repository.
+</p>
+
+<p>
+对于开发Go语言用户，有令一个专门的邮件列表
+<a href="http://groups.google.com/group/golang-checkins">golang-checkins</a>。
+这里讨论的是Go语言仓库代码的变更。
 </p>
 
 
