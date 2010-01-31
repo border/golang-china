@@ -47,11 +47,12 @@ plus one optional variable:</p>
 或其他配置文件中设置。</p>
 
 <dl>
-	<dt>
-		<code>$GOROOT</code>
-	</dt>
-	<dd>The root of the Go tree.  Typically this is <code>$HOME/go</code>
-	but it can be any directory.</dd>
+<dt>
+	<code>$GOROOT</code>
+</dt>
+<dd>The root of the Go tree.  Typically this is <code>$HOME/go</code>
+    but it can be any directory.
+</dd>
 	<p>
 	
 	<dd>Go安装包的根目录。通常是放在<code>$HOME/go</code>，当然也可以是其他位置。</dd>
@@ -110,13 +111,15 @@ plus one optional variable:</p>
 	<p>
 </dd>
 
-	<dt><code>$GOBIN</code> (optional) （可选）</dt>
-	<dd>
+<dt>
+<code>$GOBIN</code> (optional) （可选）
+</dt>
+<dd>
 	The location where binaries will be installed.
 	The default is <code>$HOME/bin</code>.
 	After installing, you will want to arrange to add this
 	directory to your <code>$PATH</code>, so you can use the tools.
-	</dd>
+</dd>
 	<p>
 	<dd>
 	指明用于存放go的二进制程序目录。如果是没设置<code>$GOBIN</code>环境变量，
@@ -460,7 +463,7 @@ To update an existing tree to the latest release, you can run:
 $ cd $GOROOT/src
 $ hg pull
 $ hg update release
-$ make all
+$ ./all.bash
 </pre>
 
 <h2>Community resources 社区资源</h2>
