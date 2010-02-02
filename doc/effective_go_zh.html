@@ -537,11 +537,21 @@ The syntax is also slightly different:
 parentheses are not required
 and the bodies must always be brace-delimited.
 </p>
+<p>
+Go语言的控制结构与C的基本相同但是有些地方还是不同。Go中没有<code>do</code>，
+<code>while</code>这样的循环，</code>for</code>与<code>switch</code>
+也非常的灵活。<code>if</code>和<code>switch</code>可以有一个初始化语句
+就像<code>for</code>一样。还增加了一个type switch(类型选择)和多通道复用(multiway 
+communications multiplexer)的<code>select</code>. 语法有一点点区别，圆括号大部分是
+不需要的但是大括号必须始终括号分隔.
+</p>
+
 
 <h3 id="if">If</h3>
 
 <p>
 In Go a simple <code>if</code> looks like this:
+Go中简单的<code>if</code>实例:
 </p>
 <pre>
 if x &gt; 0 {
@@ -555,10 +565,18 @@ on multiple lines.  It's good style to do so anyway,
 especially when the body contains a control statement such as a
 <code>return</code> or <code>break</code>.
 </p>
+<p>
+建议在写<code>if</code>语句的时候采用多行。这是一种非常好的编程风格，
+特别是在控制结构体里面有<code>return</code>或<code>break</code>的时候.
+</p>
 
 <p>
 Since <code>if</code> and <code>switch</code> accept an initialization
 statement, it's common to see one used to set up a local variable.
+</p>
+<p>
+<code>if</code>和<code>switch</code>允许初始化声明，就可以使用本地变量(local
+variable).
 </p>
 
 <pre>
@@ -575,6 +593,11 @@ the body ends in <code>break</code>, <code>continue</code>,
 <code>goto</code>, or <code>return</code>—the unnecessary
 <code>else</code> is omitted.
 </p>
+<p>
+在Go的库文件中，你可能经常看到<code>if</code>语句不进入下一条语句是因为函数在<code>
+    break</code>,<code>continue</code>,<code>goto</code>或<code>reurn</code>结束,
+<code>else</code>可以省略。
+</p>
 
 <pre>
 f, err := os.Open(name, os.O_RDONLY, 0)
@@ -590,6 +613,10 @@ sequence of error possibilities.  The code reads well if the
 successful flow of control runs down the page, eliminating error cases
 as they arise.  Since error cases tend to end in <code>return</code>
 statements, the resulting code needs no <code>else</code> statements.
+</p>
+<p>
+一般的代码都会考虑错误的处理，如果没有出错的情况就继续运行但是在出错的时候
+函数就会返回，所以在这里不需要<code>else</code>语句。
 </p>
 
 <pre>
@@ -612,6 +639,11 @@ The Go <code>for</code> loop is similar to&mdash;but not the same as&mdash;C's.
 It unifies <code>for</code>
 and <code>while</code> and there is no <code>do-while</code>.
 There are three forms, only one of which has semicolons.
+</p>
+<p>
+Go中的<code>for</code>循环与C相似，但是也有不同的地方。Go只有<code>for</code>和
+<code>while</code>, 没有<code>do-while</code>语句。这里有三种方式，只有一种方式
+使用了分号。
 </p>
 <pre>
 // Like a C for
@@ -639,6 +671,10 @@ If you're looping over an array, slice, string, or map,
 or reading from a channel, a <code>range</code> clause can
 manage the loop for you.
 </p>
+<p>
+如果你要遍历一个array, slice, string or map or 从通道(channel)读数
+<code>range</code>将是你最好的选择。
+</p>
 <pre>
 var m map[string]int
 sum := 0
@@ -651,6 +687,9 @@ for _, value := range m {  // key is unused
 For strings, the <code>range</code> does more work for you, breaking out individual
 Unicode characters by parsing the UTF-8 (erroneous encodings consume one byte and produce the
 replacement rune U+FFFD). The loop
+</p>
+<p>
+对于字符串，<code>range</code>能为你更好的工作，比如解析UTF-8并单独输出Unicode字符.
 </p>
 <pre>
 for pos, char := range "日本語" {
@@ -671,6 +710,10 @@ Finally, since Go has no comma operator and <code>++</code> and <code>--</code>
 are statements not expressions, if you want to run multiple variables in a <code>for</code>
 you should use parallel assignment.
 </p>
+<p>
+最后，Go中没有逗号运算符(comma operator)和<code>++</code>与<code>--</code>运算，
+如果你想执行多个变量在<code>for</code>语句中，你可以使用并行参数(parallel assignment).
+</p>
 <pre>
 // Reverse a
 for i, j := 0, len(a)-1; i &lt; j; i, j = i+1, j-1 {
@@ -689,6 +732,11 @@ and if the <code>switch</code> has no expression it switches on
 It's therefore possible&mdash;and idiomatic&mdash;to write an
 <code>if</code>-<code>else</code>-<code>if</code>-<code>else</code>
 chain as a <code>switch</code>.
+</p>
+<p>
+Go中的<code>switch</code>要不C更全面，它的表达式比仅仅只有常数或整数。
+每个分支(cases)从上到下进行匹配取值, 如果<code>switch</code>没有表达式
+那么switches是真。所有才有可能使用<code>switch</code>替换<code><if-else-if-else/code>
 </p>
 
 <pre>
