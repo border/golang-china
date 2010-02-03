@@ -827,12 +827,25 @@ and modifying an argument.
 </p>
 
 <p>
+Go语言中函数和方法方法的一个有意思的特性是它们可以同时返回多个值。它可以比C语言
+更简洁的处理多个返回值的情况：例如在修改一个参数的同时获取错误返回值
+（<code>-1</code>或<code>EOF</code>）。
+</p>
+
+<p>
 In C, a write error is signaled by a negative count with the
 error code secreted away in a volatile location.
 In Go, <code>Write</code>
 can return a count <i>and</i> an error: &ldquo;Yes, you wrote some
 bytes but not all of them because you filled the device&rdquo;.
 The signature of <code>*File.Write</code> in package <code>os</code> is:
+</p>
+
+<p>
+在传统的C语言中，如果写数据失败的话，会在另外一个地方保存错误标志，而且错误标志很容易被
+其他函数产生的错误覆盖。在Go语言中，则可以在返回成功写入的数据数目的同时，也可以返回有意义
+的错误信息：“您已经写了一些数据，但不是全部，因为设备在阻塞填充中”。对于<code>os</code>
+包中的<code>*File.Write</code>函数，说明如下：
 </p>
 
 <pre>
@@ -847,11 +860,22 @@ This is a common style; see the section on error handling for more examples.
 </p>
 
 <p>
+在函数的文档中有函数返回值的描述：返回成功写入的数据长度，如果<code>n</code>
+<code>!=</code> <code>len(b)</code>，则同时返回一个非non-nil的错误信息。
+这是Go语言中，处理错误的常见方式。在后面的“错误处理”一节，会有更多的描述。
+</p>
+
+<p>
 A similar approach obviates the need to pass a pointer to a return
 value to simulate a reference parameter.
 Here's a simple-minded function to
 grab a number from a position in a byte array, returning the number
 and the next position.
+</p>
+
+<p>
+多个返回值还可以用于模拟C语言中通过指针的方式遍历。下面的函数是从一个int数组中获取
+一个数据，然后移动到下一个位置。
 </p>
 
 <pre>
@@ -868,6 +892,10 @@ func nextInt(b []byte, i int) (int, int) {
 
 <p>
 You could use it to scan the numbers in an input array <code>a</code> like this:
+</p>
+
+<p>
+你还可以用这个方法来打印一个数组：
 </p>
 
 <pre>
@@ -889,11 +917,22 @@ used as the returned values.
 </p>
 
 <p>
+Go语言中，我们还可以给函数或方法的返回值命名，就像函数的输入参数那样。如果我们命名了返回值，
+那么它们将在函数开始的时候被初始化为空。然后，在执行不带参数的<code>return</code>语句时，
+命名的返回值变量将被用于返回。
+</p>
+
+<p>
 The names are not mandatory but they can make code shorter and clearer:
 they're documentation.
 If we name the results of <code>nextInt</code> it becomes
 obvious which returned <code>int</code>
 is which.
+</p>
+
+<p>
+返回值命名并不强制使用，但是有时我们给名返回值命令可以产生更清晰的代码，同时它也可以用于文档。
+例如，我们把<code>nextInt</code>的返回值命名：
 </p>
 
 <pre>
@@ -904,6 +943,11 @@ func nextInt(b []byte, pos int) (value, nextPos int) {
 Because named results are initialized and tied to an unadorned return, they can simplify
 as well as clarify.  Here's a version
 of <code>io.ReadFull</code> that uses them well:
+</p>
+
+<p>
+命名后，返回值会自动初始化，而且不需要在return中显式写出返回参数。下面的<code>io.ReadFull</code>
+函数是另一个类似的例子：
 </p>
 
 <pre>
