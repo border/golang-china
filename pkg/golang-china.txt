@@ -1,0 +1,14 @@
+Golang 中文翻译计划
+
+网址: http://golang-china.org/
+原文：<a href='http://golang.org/pkg'>http://golang.org/pkg</a>
+翻译：<a href='http://chaishushan.blog.163.com'>柴树杉</a> <a href='mailto:chaishushan@gmail.com'>(chaishushan@gmail.com)</a>
+翻译：<a href='http://www.wifihack.net/'>Bian Jiang</a> <a href='mailto:borderj@gmail.com'>(borderj@gmail.com)</a>
+
+1. 更新版本信息 2010.2.3
+parent: 4770:36e71486f51f tip
+ fix build - misc ... vs ...T fixes
+branch: default
+commit: 3 modified, 8 unknown
+update: (current)
+
