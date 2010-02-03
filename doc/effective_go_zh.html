@@ -769,6 +769,7 @@ func shouldEscape(c byte) bool {
 <p>
 Here's a comparison routine for byte arrays that uses two
 <code>switch</code> statements:
+这个操作数组的程序和上面的相似是通过两个<code>switch</code>语句。
 <pre>
 // Compare returns an integer comparing the two byte arrays
 // lexicographically.
@@ -798,6 +799,11 @@ variable.  Such a <em>type switch</em> uses the syntax of a type
 assertion with the keyword <code>type</code> inside the parentheses.
 If the switch declares a variable in the expression, the variable will
 have the corresponding type in each clause.
+</p>
+<p>
+switch可以动态的取得接口变量的数据类型，比如: <em>type switch</em>就是
+用关键字<code>type</code>插入到接口类型后面的括号来判断类型， 如果switch
+在表达式中声明了一个变量，在分支上就有相应的类型。
 </p>
 <pre>
 switch t := interfaceValue.(type) {
