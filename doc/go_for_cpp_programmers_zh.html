@@ -8,15 +8,28 @@ document discusses the differences between Go and C++, and says little
 to nothing about the similarities.
 
 <p>
+Go和C＋＋一样，也是一门系统编程语言。该文档主要面向有C＋＋经验的程序开发人员。它讨论
+了Go和C＋＋的不同之处，当然也讨论了一些相似之处。
+
+<p>
 For a more general introduction to Go, see the
 <a href="go_tutorial.html">Go tutorial</a> and
 <a href="effective_go.html">Effective Go</a>.
 
 <p>
+如果是想要Go的概要介绍，请参考
+<a href="go_tutorial.html">Go tutorial</a> 和
+<a href="effective_go.html">Effective Go</a>。
+
+<p>
 For a detailed description of the Go language, see the
 <a href="go_spec.html">Go spec</a>.
 
-<h2 id="Conceptual_Differences">Conceptual Differences</h2>
+<p>
+关于语言细节的正式说明，请参考
+<a href="go_spec.html">Go spec</a>。
+
+<h2 id="Conceptual_Differences">Conceptual Differences 概念差异</h2>
 
 <ul>
 <li>Go does not have classes with constructors or destructors.
@@ -71,7 +84,7 @@ For a detailed description of the Go language, see the
     <code>NULL</code> or simply <code>0</code>.
 </ul>
 
-<h2 id="Syntax">Syntax</h2>
+<h2 id="Syntax">Syntax 语法</h2>
 
 <p>
 The declaration syntax is reversed compared to C++. You write the name
@@ -306,7 +319,7 @@ fd := open("filename")
 defer close(fd)         // fd will be closed when this function returns.
 </pre>
 
-<h2 id="Constants">Constants </h2>
+<h2 id="Constants">Constants 常量</h2>
 
 <p>
 In Go constants may be <i>untyped</i>. This applies even to constants
@@ -348,7 +361,7 @@ const (
 )
 </pre>
 
-<h2 id="Slices">Slices</h2>
+<h2 id="Slices">Slices 切片</h2>
 
 <p>
 A slice is conceptually a struct with three fields: a
@@ -394,7 +407,7 @@ whose value is a substring of the original string.
 Because strings are immutable, string slices can be implemented
 without allocating new storage for the slices's contents.
 
-<h2 id="Making_values">Making values</h2>
+<h2 id="Making_values">Making values 构造值对象</h2>
 
 <p>
 Go has a builtin function <code>new</code> which takes a type and
@@ -433,7 +446,7 @@ A second, optional, argument is the capacity of the slice.  For example,
 Go uses garbage collection, the newly allocated array will be discarded
 sometime after there are no references to the returned slice.
 
-<h2 id="Interfaces">Interfaces</h2>
+<h2 id="Interfaces">Interfaces 接口</h2>
 
 <p>
 Where C++ provides classes, subclasses and templates,
@@ -610,9 +623,18 @@ different, newly created, goroutine.
 All goroutines in a single program share the same address space.
 
 <p>
+Go语言中使用<code>go</code>可以启动一个<em>goroutine</em>。<em>goroutine</em>
+和线程的概念类似，和程序共享一个地址空间。
+
+
+<p>
 Internally, goroutines act like coroutines that are multiplexed among
 multiple operating system threads.  You do not have to worry
 about these details.
+
+<p>
+goroutines和支持多路并发草组系统中的协程（coroutines）类似，用户不用关心具体
+的实现细节。
 
 <pre>
 func server(i int) {
@@ -630,11 +652,20 @@ go server(2)
 function is equivalent to a C++ <code>while (true)</code> loop.)
 
 <p>
+（需要注意的是<code>server</code>函数中的<code>for</code>循环语句和
+C++ <code>while (true)</code>的循环类似。）
+
+<p>
 Goroutines are (intended to be) cheap.
+<p>
+Goroutines资源开销小，比较廉价。
 
 <p>
 Function literals (which Go implements as closures)
 can be useful with the <code>go</code> statement.
+
+<p>
+<code>go</code>也可以用于启动新定义的内部函数（闭包）为Goroutines。
 
 <pre>
 var g int
@@ -645,7 +676,7 @@ go func(i int) {
 }(1000)  // Passes argument 1000 to the function literal.
 </pre>
 
-<h2 id="Channels">Channels</h2>
+<h2 id="Channels">Channels 管道</h2>
 
 <p>
 Channels are used to communicate between goroutines.  Any value may be
@@ -657,10 +688,19 @@ When calling
 functions, channels are passed by reference.
 
 <p>
+管道可以用于两个goroutines之间的通讯。我们可以用管道传递任意类脂的变量。Go语言中管道是
+廉价并且便捷的。二元操作符 <code>&lt;-</code> 用于向管道发送数据。一元操作符<code>&lt;-</code>
+用于从管道接收数据。在函数参数中，管道通过引用传递给函数。
+
+<p>
 The Go library provides mutexes, but you can also use
 a single goroutine with a shared channel.
 Here is an example of using a manager function to control access to a
 single value.
+
+<p>
+虽然go语言的标准库中提供了互斥的支持，但是我们也可以用一个单一的goroutine提供对变量的
+共享操作。例如，下面的函数用于管理对变量的读写操作。
 
 <pre>
 type cmd struct { get bool; val int }
@@ -682,6 +722,10 @@ from the manager might receive a request from another goroutine
 instead.
 A solution is to pass in a channel.
 
+<p>
+在这个例子中，管道被同时用于输入和输出。但是当多个goroutines对变量操作时可能导致
+问题：对管道的读操作可能读到的是请求命令。解决的方法是将命令和数据分为不同的管道。
+
 <pre>
 type cmd2 struct { get bool; val int; ch &lt;- chan int }
 func manager2(ch chan cmd2) {
@@ -696,6 +740,9 @@ func manager2(ch chan cmd2) {
 
 <p>
 To use <code>manager2</code>, given a channel to it:
+
+<p>
+这里掩饰了如何使用<code>manager2</code>：
 
 <pre>
 func f4(ch &lt;- chan cmd2) int {
