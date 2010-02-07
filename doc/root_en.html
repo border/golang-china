@@ -1,0 +1,96 @@
+<!-- The Go Programming Language -->
+
+<script>
+  // On the frontpage we hide the header and navigation elements that other
+  // pages have.
+  document.getElementById('generatedHeader').style.display = 'none';
+  document.getElementById('nav').style.display = 'none';
+</script>
+
+<div id="gettingStarted">
+  <h1>Getting started</h1>
+
+  <ol>
+    <li>
+      <span><a href="/doc/install.html">Install Go</a>.</span>
+    </li>
+
+    <li>
+      <span>Read the <a href="/doc/go_tutorial.html">tutorial</a>.</span>
+    </li>
+
+    <li>
+      <span>Learn the <a href="/pkg">libraries</a>.</span>
+    </li>
+  </ol>
+
+  <h1>Slow compiles?<br>Watch this</h1>
+  <table width="100%">
+    <tr>
+      <td align=center width="100%">
+        <a href="http://www.youtube.com/watch?v=wwoWei-GAPo"><img src="/doc/video-snap.jpg"></a>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div id="frontpage">
+
+<table style="padding-top: 1em; padding-bottom: 2em;">
+  <tr>
+    <td>
+      <img style="padding-right: 1em;" src="/doc/go-logo-black.png">
+    </td>
+    <td>
+      <div><span style="font-size: 2em; font-weight: bold;">a systems programming language</span><br><span style="font-size: 1.5em;">expressive, concurrent, garbage-collected</span></div>
+    </td>
+  </tr>
+</table>
+
+<p style="font-size: 1.5em; font-weight: bold;">Go is &hellip;</p>
+
+<h3>&hellip; simple</h3>
+<pre class="code">
+package main
+
+import "fmt"
+
+func main() {
+  fmt.Printf("Hello, 世界\n")
+}</pre>
+
+<h3>&hellip; fast</h3>
+
+<p>
+Go compilers produce fast code fast. Typical builds take a fraction of a second yet the resulting programs run nearly as quickly as comparable C or C++ code.
+</p>
+
+<h3>&hellip; safe</h3>
+
+<p>Go is type safe and memory safe. Go has pointers but no pointer arithmetic.
+For random access, use slices, which know their limits.</p>
+
+<h3>&hellip; concurrent</h3>
+
+<p>
+Go promotes writing systems and servers as sets of lightweight
+communicating processes, called goroutines, with strong support from the language.
+Run thousands of goroutines if you want&mdash;and say good-bye to stack overflows.
+</p>
+
+<h3>&hellip; fun</h3>
+
+<p>
+Go has fast builds, clean syntax, garbage collection,
+methods for any type, and run-time reflection.
+It feels like a dynamic language but has the speed and safety of a static language.
+It's a joy to use.
+</p>
+
+<h3>&hellip; open source</h3>
+
+<p>
+<a href="/doc/install.html">Go for it</a>.
+</p>
+
+</div>

@@ -1,11 +1,24 @@
-<!-- The Go Memory Model -->
+<!-- The Go Memory Model Go语言内存模型 -->
+<p>
+<h2>译者</h2>
+<p>
+<pre>
+    原文：<a href='http://golang.org/go_mem.html'>http://golang.org/go_mem.html</a>
+    翻译：<a href='http://chaishushan.blog.163.com'>柴树杉</a> <a href='mailto:chaishushan@gmail.com'>(chaishushan@gmail.com)</a>
+    翻译：<a href='http://www.wifihack.net/'>Bian Jiang</a> <a href='mailto:borderj@gmail.com'>(borderj@gmail.com)</a>
+</pre>
+<p>
 
-<h2>Introduction</h2>
+<h2>Introduction 简介</h2>
 
 <p>
 The Go memory model specifies the conditions under which
 reads of a variable in one goroutine can be guaranteed to
 observe values produced by writes to the same variable in a different goroutine.
+</p>
+
+<p>
+Go的你内存模型可以保证对一个变量的读操作可以侦测到令一个goroutine中对给变量进行的写操作。
 </p>
 
 <h2>Happens Before</h2>
@@ -89,14 +102,19 @@ behave as multiple machine-word-sized operations in an
 unspecified order.
 </p>
 
-<h2>Synchronization</h2>
+<h2>Synchronization 同步</h2>
 
-<h3>Initialization</h3>
+<h3>Initialization 初始化</h3>
 
 <p>
 Program initialization runs in a single goroutine and
 new goroutines created during initialization do not
 start running until initialization ends.
+</p>
+
+<p>
+程序的初始化在一个独立的goroutine中执行。在初始化过程中创建的goroutine将在
+第一个用于初始化goroutine执行完成后启动。
 </p>
 
 <p class="rule">
@@ -105,8 +123,18 @@ If a package <code>p</code> imports package <code>q</code>, the completion of
 </p>
 
 <p class="rule">
+如果包<code>p</code>导入了包<code>q</code>，包<code>q</code>的<code>init</code>
+初始化函数将在包<code>p</code>的初始化之前执行。
+</p>
+
+<p class="rule">
 The start of the function <code>main.main</code> happens after
 all <code>init</code> functions have finished.
+</p>
+
+<p class="rule">
+程序的入口函数<code>main.main</code>则是在所有的<code>init</code>函数执行完成
+之后启动。
 </p>
 
 <p class="rule">
@@ -114,15 +142,28 @@ The execution of any goroutines created during <code>init</code>
 functions happens after all <code>init</code> functions have finished.
 </p>
 
-<h3>Goroutine creation</h3>
+<p class="rule">
+在任意<code>init</code>函数中新创建的goroutines，将在所有的<code>init</code>
+函数完成后执行。
+</p>
+
+<h3>Goroutine creation Goroutine创建</h3>
 
 <p class="rule">
 The <code>go</code> statement that starts a new goroutine
 happens before the goroutine's execution begins.
 </p>
 
+<p class="rule">
+用于启动goroutine的<code>go</code>语句在goroutine之前运行。
+</p>
+
 <p>
 For example, in this program:
+</p>
+
+<p>
+例如，下面的程序：
 </p>
 
 <pre>
@@ -143,7 +184,12 @@ calling <code>hello</code> will print <code>"hello, world"</code>
 at some point in the future (perhaps after <code>hello</code> has returned).
 </p>
 
-<h3>Channel communication</h3>
+<p>
+调用<code>hello</code>函数，会在某个时刻打印<code>"hello, world"</code>
+（有可能是在<code>hello</code>函数返回之后）。
+</p>
+
+<h3>Channel communication 管道通信</h3>
 
 <p>
 Channel communication is the main method of synchronization
@@ -152,13 +198,26 @@ is matched to a corresponding receive from that channel,
 usually in a different goroutine.
 </p>
 
+<p>
+用管道通信是两个goroutines之间同步的主要方法。在管道上执行的发送操作会关联到该管道的
+接收操作，这通常对应goroutines。
+</p>
+
 <p class="rule">
 A send on a channel happens before the corresponding
 receive from that channel completes.
 </p>
 
+<p class="rule">
+管道上的发送操作发生在管道的接收完成之前（happens before）。
+</p>
+
 <p>
 This program:
+</p>
+
+<p>
+例如这个程序：
 </p>
 
 <pre>
@@ -184,13 +243,27 @@ the corresponding receive on <code>c</code> completes, which happens before
 the <code>print</code>.
 </p>
 
+<p>
+可以确保会输出<code>"hello, world"</code>。因为，<code>a</code>的赋值发生在向管道
+<code>c</code>发送数据之前，而管道的发送操作在管道接收完成之前发生。因此，在<code>print</code>
+的时候，<code>a</code>已经被赋值。
+</p>
+
 <p class="rule">
 A receive from an unbuffered channel happens before
 the send on that channel completes.
 </p>
 
+<p class="rule">
+从一个unbuffered管道接收数据在向管道发送数据完成之前发送。
+</p>
+
 <p>
 This program:
+</p>
+
+<p>
+下面的是示例程序：
 </p>
 
 <pre>
@@ -219,17 +292,34 @@ before the <code>print</code>.
 </p>
 
 <p>
+同样可以确保输出<code>"hello, world"</code>。因为，<code>a</code>的赋值在从管道接收数据
+前发生，而从管道接收数据操作在向unbuffered管道发送完成之前发生。所以，在<code>print</code>
+的时候，<code>a</code>已经被赋值。
+</p>
+
+<p>
 If the channel were buffered (e.g., <code>c = make(chan int, 1)</code>)
 then the program would not be guaranteed to print
 <code>"hello, world"</code>.  (It might print the empty string;
 it cannot print <code>"hello, sailor"</code>, nor can it crash.)
 </p>
 
-<h3>Locks</h3>
+<p>
+如果用的是缓冲管道（如<code>c = make(chan int, 1)</code>），将不能保证输出
+<code>"hello, world"</code>结果（可能会是空字符串，但肯定不会是他未知的字符串，
+或导致程序崩溃）。
+</p>
+
+<h3>Locks 锁</h3>
 
 <p>
 The <code>sync</code> package implements two lock data types,
 <code>sync.Mutex</code> and <code>sync.RWMutex</code>.
+</p>
+
+<p>
+包<code>sync</code>实现了两种类型的锁：<code>sync.Mutex</code>和
+<code>sync.RWMutex</code>。
 </p>
 
 <p class="rule">
@@ -237,8 +327,18 @@ For any <code>sync.Mutex</code> or <code>sync.RWMutex</code> variable <code>l</c
 the <i>n</i>'th call to <code>l.Unlock()</code> happens before the <i>m</i>'th call to <code>l.Lock()</code> returns.
 </p>
 
+<p class="rule">
+对于任意<code>sync.Mutex</code>或<code>sync.RWMutex</code>变量<code>l</code>。
+如果<i>n</i> &lt; <i>m</i>，那么第<i>n</i>次<code>l.Unlock()</code>调用在第
+<i>m</i>此<code>l.Lock()</code>调用返回前发生。
+</p>
+
 <p>
 This program:
+</p>
+
+<p>
+例如程序：
 </p>
 
 <pre>
@@ -265,6 +365,12 @@ before the second call to <code>l.Lock()</code> (in <code>main</code>) returns,
 which happens before the <code>print</code>.
 </p>
 
+<p>
+可以确保输出<code>"hello, world"</code>结果。因为，第一次<code>l.Unlock()</code>
+调用（在<code>f</code>函数中）在第二次<code>l.Lock()</code>调用（在<code>main</code>
+函数中）返回之前发生，也就是在<code>print</code>函数调用之前发生。
+</p>
+
 <p class="rule">
 For any call to <code>l.RLock</code> on a <code>sync.RWMutex</code> variable <code>l</code>,
 there is an <i>n</i> such that the <code>l.RLock</code> happens (returns) after the <i>n</i>'th call to
@@ -282,12 +388,27 @@ but only one will run <code>f()</code>, and the other calls block
 until <code>f()</code> has returned.
 </p>
 
+<p>
+包<code>once</code>提供了一个在多个goroutines中进行初始化的方法。多个goroutines可以
+通过<code>once.Do(f)</code>方式调用<code>f</code>函数。但是，<code>f</code>函数
+只会被执行一次，其他的调用将被阻塞直到唯一执行的<code>f()</code>返回。
+</p>
+
 <p class="rule">
 A single call of <code>f()</code> from <code>once.Do(f)</code> happens (returns) before any call of <code>once.Do(f)</code> returns.
 </p>
 
+<p class="rule">
+<code>once.Do(f)</code>中唯一执行的<code>f()</code>发生在所有的<code>once.Do(f)</code>
+返回之前。
+</p>
+
 <p>
 In this program:
+</p>
+
+<p>
+有代码：
 </p>
 
 <pre>
@@ -313,7 +434,12 @@ calling <code>twoprint</code> causes <code>"hello, world"</code> to be printed t
 The first call to <code>twoprint</code> runs <code>setup</code> once.
 </p>
 
-<h2>Incorrect synchronization</h2>
+<p>
+调用<code>twoprint</code>会输出<code>"hello, world"</code>两次。第一次<code>twoprint</code>
+函数会运行<code>setup</code>唯一一次。
+</p>
+
+<h2>Incorrect synchronization 错误的同步方式</h2>
 
 <p>
 Note that a read <span class="event">r</span> may observe the value written by a write <span class="event">w</span>
@@ -323,7 +449,15 @@ will observe writes that happened before <span class="event">w</span>.
 </p>
 
 <p>
+注意：变量读操作虽然可以侦测到变量的写操作，但是并不能保证对变量的读操作就一定发生在写操作之后。
+</p>
+
+<p>
 In this program:
+</p>
+
+<p>
+例如：
 </p>
 
 <pre>
@@ -350,13 +484,25 @@ it can happen that <code>g</code> prints <code>2</code> and then <code>0</code>.
 </p>
 
 <p>
+函数<code>g</code>可能输出<code>2</code>，也可能输出<code>0</code>。
+</p>
+
+<p>
 This fact invalidates a few common idioms.
+</p>
+
+<p>
+这种情形使得我们必须回避一些看似合理的用法。
 </p>
 
 <p>
 Double-checked locking is an attempt to avoid the overhead of synchronization.
 For example, the <code>twoprint</code> program might be
 incorrectly written as:
+</p>
+
+<p>
+这里用重复检测的方法来代替同步。在例子中，<code>twoprint</code>函数可能得到错误的值：
 </p>
 
 <pre>
@@ -389,7 +535,16 @@ instead of <code>"hello, world"</code>.
 </p>
 
 <p>
+在<code>doprint</code>函数中，写<code>done</code>暗示已经给<code>a</code>赋值了。
+但是没有办法给出保证，函数可能输出空的值（在2个goroutines中同时执行到测试语句）。
+</p>
+
+<p>
 Another incorrect idiom is busy waiting for a value, as in:
+</p>
+
+<p>
+另一个错误陷阱是忙等待：
 </p>
 
 <pre>
@@ -421,7 +576,18 @@ guaranteed to finish.
 </p>
 
 <p>
+我们没有办法保证在<code>main</code>中看到了<code>done</code>值被修改的同时也
+能看到<code>a</code>被修改，因此程序可能输出空字符串。更坏的结果是，<code>main</code>
+函数可能永远不知道<code>done</code>被修改，因为在两个线程之间没有同步操作，这样<code>main</code>
+函数永远不能返回。
+</p>
+
+<p>
 There are subtler variants on this theme, such as this program.
+</p>
+
+<p>
+下面的用法本质上也是同样的问题.
 </p>
 
 <pre>
@@ -452,6 +618,15 @@ value for <code>g.msg</code>.
 </p>
 
 <p>
+即使<code>main</code>观察到了<code>g != nil</code>条件并且退出了循环，但是任何然
+不能保证它看到了<code>g.msg</code>的初始化之后的结果。
+</p>
+
+<p>
 In all these examples, the solution is the same:
 use explicit synchronization.
+</p>
+
+<p>
+在这些例子中，只有一种解决方法：用显示的同步。
 </p>

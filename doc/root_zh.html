@@ -1,0 +1,122 @@
+<!-- The Go Programming Language Go程序设计语言 -->
+<p>
+<h2>译者</h2>
+<p>
+<pre>
+    原文：<a href='http://golang.org/'>http://golang.org/</a>
+    翻译：<a href='http://chaishushan.blog.163.com'>柴树杉</a> <a href='mailto:chaishushan@gmail.com'>(chaishushan@gmail.com)</a>
+    翻译：<a href='http://www.wifihack.net/'>Bian Jiang</a> <a href='mailto:borderj@gmail.com'>(borderj@gmail.com)</a>
+</pre>
+<p>
+
+<script>
+  // On the frontpage we hide the header and navigation elements that other
+  // pages have.
+  document.getElementById('generatedHeader').style.display = 'none';
+  document.getElementById('nav').style.display = 'none';
+</script>
+
+<div id="gettingStarted">
+  <h1>Getting started 开始</h1>
+
+  <ol>
+    <li>
+      <span><a href="/doc/install.html">Install Go 安装Go</a>.</span>
+    </li>
+
+    <li>
+      <span>Read the <a href="/doc/go_tutorial.html">tutorial Go语言入门</a>.</span>
+    </li>
+
+    <li>
+      <span>Learn the <a href="/pkg">libraries</a>. 学习使用库</span>
+    </li>
+  </ol>
+
+  <h1>Slow compiles?<br>Watch this 查看演示视频</h1>
+  <table width="100%">
+    <tr>
+      <td align=center width="100%">
+        <a href="http://www.youtube.com/watch?v=wwoWei-GAPo"><img src="/doc/video-snap.jpg"></a>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div id="frontpage">
+
+<table style="padding-top: 1em; padding-bottom: 2em;">
+  <tr>
+    <td>
+      <img style="padding-right: 1em;" src="/doc/go-logo-black.png">
+    </td>
+    <td>
+      <div><span style="font-size: 2em; font-weight: bold;">a systems programming language 系统级语言</span><br><span style="font-size: 1.5em;">expressive, concurrent, garbage-collected 
+      并行，垃圾回收</span></div>
+    </td>
+  </tr>
+</table>
+
+<p style="font-size: 1.5em; font-weight: bold;">Go is &hellip;</p>
+
+<h3>&hellip; simple 简洁</h3>
+<pre class="code">
+package main
+
+import "fmt"
+
+func main() {
+  fmt.Printf("Hello, 世界\n")
+}</pre>
+
+<h3>&hellip; fast 快速</h3>
+
+<p>
+Go compilers produce fast code fast. Typical builds take a fraction of a second yet the resulting programs run nearly as quickly as comparable C or C++ code.
+</p>
+
+<p>
+Go编译器可以快速编译代码。增量编译时，通常可以在1秒内编译完成。并且得到的go程序运行速度
+和C/C＋＋相近。
+</p>
+
+<h3>&hellip; safe 安全</h3>
+
+<p>Go is type safe and memory safe. Go has pointers but no pointer arithmetic.
+For random access, use slices, which know their limits.</p>
+
+<p>Go是类型安全的，也是内存安全的。Go语言中提供指针，但是没有指针运算。如果想随机访问
+某段内存中的数据，可以用slices（它知道内存的有效区域）。</p>
+
+<h3>&hellip; concurrent 并行编程</h3>
+
+<p>
+Go promotes writing systems and servers as sets of lightweight
+communicating processes, called goroutines, with strong support from the language.
+Run thousands of goroutines if you want&mdash;and say good-bye to stack overflows.
+</p>
+
+<p>
+作为一种系统级语言，Go语言提供了一种叫goroutines的可通讯的轻量级线程的概念。你可以启动上千个
+goroutines，并且永远不用再担心堆栈溢出的问题。</p>
+
+<h3>&hellip; fun 功能强大</h3>
+
+<p>
+Go has fast builds, clean syntax, garbage collection,
+methods for any type, and run-time reflection.
+It feels like a dynamic language but has the speed and safety of a static language.
+It's a joy to use.
+</p>
+
+<p>
+Go程序编译快，语法清晰，完善的垃圾内存收集，每种类型可以定义自己的方法，运行时提供反射支持。
+它有很多动态语言的特性，但是速度上和静态编译语言类似。用Go编程是一种享受 :)</p>
+
+<h3>&hellip; open source 开源</h3>
+
+<p>
+<a href="/doc/install.html">Go for it 开始吧</a>.
+</p>
+
+</div>
