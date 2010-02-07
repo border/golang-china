@@ -47,15 +47,28 @@ For a detailed description of the Go language, see the
     and virtual functions, Go provides <em>interfaces</em>, which are
     <a href="#Interfaces">discussed in more detail below</a>.
     Interfaces are also used where C++ uses templates.
+<li>Go没有支持构造和析构的class类型，也没有继承和虚函数的概念。但是go提供接口<em>interfaces</em>
+支持，我们可以把接口看作是C++中模板类似的技术。
 
 <li>Go uses garbage collection. It is not necessary (or possible)
     to release memory explicitly. The garbage collection is (intended to be)
     incremental and highly efficient on modern processors.
+<li>Go提供垃圾内存回收支持。我们没有必要显式释放内存，go的运行时系统会帮我们收集垃圾内存。
 
 <li>Go has pointers but not pointer arithmetic. You cannot
     use a pointer variable to walk through the bytes of a string.
+<li>Go中有指针，但是没有指针算术。因此，你不可能通过指针以字节方式来遍历一个字符串。
 
 <li>Arrays in Go are first class values. When an array is used as a
+    function parameter, the function receives a copy of the array, not
+    a pointer to it. However, in practice functions often use slices
+    for parameters; slices hold pointers to underlying arrays.  Slices
+    are <a href="#Slices">discussed further below</a>.
+<li>数组一个普通类型变量。当用数组作为参数调用函数时，将会复制整个数组。当然，Go语言中
+一般用切片（slices）代替数组作为参数，切片是建立在底层数组地址之上的，因此传递的是数组的
+地址。切片在后面会详细讨论。
+
+Arrays in Go are first class values. When an array is used as a
     function parameter, the function receives a copy of the array, not
     a pointer to it. However, in practice functions often use slices
     for parameters; slices hold pointers to underlying arrays.  Slices
@@ -63,35 +76,48 @@ For a detailed description of the Go language, see the
 
 <li>Strings are provided by the language. They may not be changed once they
     have been created.
+<li>内建对字符串的支持。并且字符串创建后就不能修改。
 
 <li>Hash tables are provided by the language. They are called maps.
+<li>内建hash表支持，术语叫字典（map）。
 
 <li>Separate threads of execution, and communication channels between
     them, are provided by the language. This
     is <a href="#Goroutines">discussed further below</a>.
+<li>语言本身提供并发和管道通讯功能，细节在后面会讨论。
 
 <li>Certain types (maps and channels, described further below)
     are passed by reference, not by value. That is, passing a map to a
     function does not copy the map, and if the function changes the map
     the change will be seen by the caller.  In C++ terms, one can
     think of these as being reference types.
+<li>有少数类型是通过引用传递（字典和管道，将在后面讨论）。也就是说，将字典传递给一个
+函数不会复制整个字典，而且函数对字典的修改会影响到函数调用者的字典数据。这和C++中引用
+概念类似。
 
 <li>Go does not use header files. Instead, each source file is part of a
     defined <em>package</em>. When a package defines an object
     (type, constant, variable, function) with a name starting with an
     upper case letter, that object is visible to any other file which
     imports that package.
+<li>Go不使用头文件。每个源文件都被定义在特定的包<em>package</em>中，在包中以大写
+字母定义的对象（例如类型，常量，变量，函数等）对外是可见的，可以被别的代码导入使用。
 
 <li>Go does not support implicit type conversion. Operations that mix
     different types require casts (called conversions in Go).
+<li>Go不会作隐式类型转换。如果在不同类型之间赋值，必须强制转换类型。
 
 <li>Go does not support function overloading and does not support user
     defined operators.
+<li>Go不支持函数重载，也不支持运算符定义。
 
 <li>Go does not support <code>const</code> or <code>volatile</code> qualifiers.
+<li>Go不支持<code>const</code>和<code>volatile</code> 修饰符。
 
 <li>Go uses <code>nil</code> for invalid pointers, where C++ uses
     <code>NULL</code> or simply <code>0</code>.
+<li>Go使用<code>nil</code>表示无效的指针，C++中使用<code>NULL</code>或<code>0</code>
+	表示空指针。
 </ul>
 
 <h2 id="Syntax">Syntax 语法</h2>
