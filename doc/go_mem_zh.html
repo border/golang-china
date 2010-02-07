@@ -38,6 +38,13 @@ the updated value of <code>b</code> before the updated value of <code>a</code>.
 </p>
 
 <p>
+在一个单独的goroutine中，变量的读和写操作顺序和代码所写的顺序一致。因此，在变量值没有
+被改变的时候，编译器和处理器可能会记录变量的操作顺序。但是，这种先验性的顺序记录会导致
+在两个不同的goroutine对变量操作顺序记录有差别。例如，一个goroutine执行<code>a = 1; b = 2;</code>，
+但是在另一个goroutine中可能会现感知到<code>b</code>被更新。
+</p>
+
+<p>
 To specify the requirements of reads and writes, we define
 <i>happens before</i>, a partial order on the execution
 of memory operations in a Go program.  If event <span class="event">e<sub>1</sub></span> happens
@@ -47,8 +54,23 @@ after <span class="event">e<sub>2</sub></span>, then we say that <span class="ev
 </p>
 
 <p>
+为了解决这种二义性问题，Go语言中引进一个<i>happens before</i>的概念，它用于描述
+对内存操作的先后顺序问题。如果事件<span class="event">e<sub>1</sub></span> happens
+before 事件 <span class="event">e<sub>2</sub></span>，我们说事件
+<span class="event">e<sub>2</sub></span> happens after <span class="event">e<sub>1</sub></span>。
+如果，事件<span class="event">e<sub>1</sub></span> does not happen before 事件
+ <span class="event">e<sub>2</sub></span>，并且 does not happen
+after <span class="event">e<sub>2</sub></span>，我们说事件<span class="event">e<sub>1</sub></span>和
+<span class="event">e<sub>2</sub></span>同时发生。
+</p>
+
+<p>
 Within a single goroutine, the happens before order is the
 order expressed by the program.
+</p>
+
+<p>
+对于一个单一的goroutine，happens before 的顺序和代码的顺序是一致的。
 </p>
 
 <p>
@@ -56,10 +78,19 @@ A read <span class="event">r</span> of a variable <code>v</code> is <i>allowed</
 if both of the following hold:
 </p>
 
+<p>
+如果能满足以下的条件，一个对变量<code>v</code>的读事件<span class="event">r</span>可以
+感知到另一个对变量<code>v</code>的写事件<span class="event">w</span>：
+</p>
+
 <ol>
-<li><span class="event">w</span> happens before <span class="event">r</span>.</li>
-<li>There is no other write <span class="event">w'</span> to <code>v</code> that happens
-    after <span class="event">w</span> but before <span class="event">r</span>.</li>
+	<li><span class="event">w</span> happens before <span class="event">r</span>.</li>
+	<li>写事件<span class="event">w</span> happens before 读事件<span class="event">r</span>。</li>
+	
+	<li>There is no other write <span class="event">w'</span> to <code>v</code> that happens
+    	after <span class="event">w</span> but before <span class="event">r</span>.</li>
+    <li>没有既满足 happens after <span class="event">w</span> 同时满主 happens before 
+    	<span class="event">r</span>的对变量<code>v</code>的写事件<span class="event">w'</span>。</li>
 </ol>
 
 <p>
@@ -69,16 +100,30 @@ write <span class="event">r</span> is allowed to observe.
 That is, <span class="event">r</span> is <i>guaranteed</i> to observe <span class="event">w</span> if both of the following hold:
 </p>
 
+<p>
+为了保证读事件<span class="event">r</span>可以感知对变量<code>v</code>的写事件，我们首先要
+确保<span class="event">w</span>是变量<code>v</code>的唯一的写事件。同时还要满足以下条件：
+</p>
+
 <ol>
-<li><span class="event">w</span> happens before <span class="event">r</span>.</li>
-<li>Any other write to the shared variable <code>v</code>
-either happens before <span class="event">w</span> or after <span class="event">r</span>.</li>
+	<li><span class="event">w</span> happens before <span class="event">r</span>.</li>
+	<li>写事件<span class="event">w</span> happens before 读事件<span class="event">r</span>。</li>
+	
+	<li>Any other write to the shared variable <code>v</code>
+		either happens before <span class="event">w</span> or after <span class="event">r</span>.</li>
+	<li>其他对变量<code>v</code>的访问必须 happens before 写事件<span class="event">w</span>
+		或者 happens after 读事件<span class="event">r</span>。</li>
 </ol>
 
 <p>
 This pair of conditions is stronger than the first pair;
 it requires that there are no other writes happening
 concurrently with <span class="event">w</span> or <span class="event">r</span>.
+</p>
+
+<p>
+第二组条件比第一组条件更加严格。因为，它要求在<span class="event">w</span>和
+<span class="event">r</span>并行执行的程序中不能再有其他的读操作。
 </p>
 
 <p>
@@ -92,14 +137,28 @@ desired writes.
 </p>
 
 <p>
+对于在单一的goroutine中两组条件是等价的，读事件可以确保感知到对变量的写事件。但是，对于在
+两个goroutines共享变量<code>v</code>，我们必须通过同步事件来保证 happens-before 条件
+（这是读事件感知写事件的必要条件）。
+</p>
+
+<p>
 The initialization of variable <code>v</code> with the zero value
 for <code>v</code>'s type behaves as a write in the memory model.
+</p>
+
+<p>
+将变量<code>v</code>自动初始化为零也是属于这个内存操作模型。
 </p>
 
 <p>
 Reads and writes of values larger than a single machine word
 behave as multiple machine-word-sized operations in an
 unspecified order.
+</p>
+
+<p>
+读写超过一个机器字长度的数据，顺序也是不能保证的。
 </p>
 
 <h2>Synchronization 同步</h2>
