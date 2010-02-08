@@ -128,15 +128,20 @@ followed by the type. Unlike in C++, the syntax for a type does not match
 the way in which the variable is used. Type declarations may be read
 easily from left to right.
 
+<p>
+Go中变量的声明语法和C++相反。定义变量时，先写变量的名字，然后是变量的类型。这样
+不会出现像C++中，类型不能匹配后面所有变量的情况（指针类型）。而且语法清晰，便于
+阅读。
+
 <pre>
 <b>Go                           C++</b>
 var v1 int                // int v1;
-var v2 string             // const std::string v2;  (approximately)
+var v2 string             // const std::string v2;  (approximately 近似等价)
 var v3 [10]int            // int v3[10];
-var v4 []int              // int* v4;  (approximately)
+var v4 []int              // int* v4;  (approximately 近似等价)
 var v5 struct { f int }   // struct { int f; } v5;
-var v6 *int               // int* v6;  (but no pointer arithmetic)
-var v7 map[string]int     // unordered_map&lt;string, int&gt;* v7;  (approximately)
+var v6 *int               // int* v6;  (but no pointer arithmetic 没有指针算术)
+var v7 map[string]int     // unordered_map&lt;string, int&gt;* v7;  (approximately 近似等价)
 var v8 func(a int) int    // int (*v8)(int a);
 </pre>
 
@@ -150,8 +155,16 @@ the receiver appears before the name of the object being declared; see
 the <a href="#Interfaces">discussion of interfaces</a>.
 
 <p>
+变量的声明通常是从某些关键字开始，例如<code>var</code>，
+<code>func</code>，<code>const</code>或<code>type</code>。对于类型的专有方法定义，
+在变量名前面还要加上对应该方法发类型对象变量，细节清参考<a href="#Interfaces">discussion of interfaces</a>。
+
+<p>
 You can also use a keyword followed by a series of declarations in
 parentheses.
+
+<p>
+你也可以在关键字后面加括号，这样可以同时定义多个变量。
 
 <pre>
 var (
@@ -165,6 +178,10 @@ When declaring a function, you must either provide a name for each parameter
 or not provide a name for any parameter; you can't omit some names
 and provide others.  You may group several names with the same type:
 
+<p>
+定义函数的时候，你可以指定每个参数的名字或者不指定任何参数名字，但是你不能只指定部分函数参数的
+名字。如果是相邻的参数是相同的类型，也可以统一指定类型。
+
 <pre>
 func f(i, j, k int, s, t string)
 </pre>
@@ -174,6 +191,10 @@ A variable may be initialized when it is declared.  When this is done,
 specifying the type is permitted but not required.  When the type is
 not specified, the type of the variable is the type of the
 initialization expression.
+
+<p>
+对于变量，可以在定时进行初始化。对于这种情况，我们可以省略变量的类型部分，因为Go编译器
+可以根据初始化的值推导出变量的类型。
 
 <pre>
 var v = *p
@@ -187,8 +208,15 @@ implicitly initialized to the type's zero value (0, nil, etc.).  There are no
 uninitialized variables in Go.
 
 <p>
+如果变量定义时没有初始化，则必须指定类型。没有显式初始化的变量，会被自动初始化为空的值，
+例如0，nil等。Go不存在完全未初始化的变量。
+
+<p>
 Within a function, a short declaration syntax is available with
 <code>:=</code> .
+
+<p>
+用<code>:=</code>操作符，还有更简短的定义语法：
 
 <pre>
 v1 := v2
@@ -197,12 +225,18 @@ v1 := v2
 <p>
 This is equivalent to
 
+<p>
+和下面语句等价：
+
 <pre>
 var v1 = v2
 </pre>
 
 <p>
 Go permits multiple assignments, which are done in parallel.
+
+<p>
+Go还提供多个变量同时赋值：
 
 <pre>
 i, j = j, i    // Swap i and j.
@@ -212,6 +246,10 @@ i, j = j, i    // Swap i and j.
 Functions may have multiple return values, indicated by a list in
 parentheses.  The returned values can be stored by assignment
 to a list of variables.
+
+<p>
+函数也可以返回多个值，多个返回值需要用括号括起来。返回值可以用一个等于符号赋给
+多个变量。
 
 <pre>
 func f() (i int, j int) { ... }
@@ -226,6 +264,19 @@ incomplete (the exact rules are
 in <a href="go_spec.html#Semicolons">the language specification</a>).
 A consequence of this is that in some cases Go does not permit you to
 use a line break.  For example, you may not write
+
+<p>
+Go中使用很少的分号，虽然每个语句之间实际上是用分号分割的。因为，go编译器会在非空行，
+
+ code uses very few semicolons in practice.  Technically, all Go
+statements are terminated by a semicolon.  However, Go treats the end
+of a non-blank line as a semicolon unless the line is clearly
+incomplete (the exact rules are
+in <a href="go_spec.html#Semicolons">the language specification</a>).
+A consequence of this is that in some cases Go does not permit you to
+use a line break.  For example, you may not write
+
+
 <pre>
 func g()
 {                  // INVALID
