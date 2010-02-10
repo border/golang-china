@@ -651,9 +651,19 @@ inheritance is required.  The implementation of the interface is
 entirely separate from the interface itself.
 
 <p>
+C++提供了class，类继承和模板，类似的go语言提供了接口支持。go中的接口和C++中的纯虚
+基类（只有虚函数，没有数据成员）类似。在Go语言中，任何实现了接口的函数的类型，都可以
+看作是接口的一个实现。类型在实现某个接口的时候，不需要显式关联该接口的信息。接口的实现
+和接口的定义完全分离了。
+
+<p>
 A method looks like an ordinary function definition, except that it
 has a <em>receiver</em>.  The receiver is similar to
 the <code>this</code> pointer in a C++ class method.
+
+<p>
+类型的方法和普通函数定义类似，只是前面多了一个对象接收者<em>receiver</em>。
+对象接受者和C++中的<code>this</code>指针类似。
 
 <pre>
 type myType struct { i int }
@@ -665,13 +675,24 @@ This declares a method <code>get</code> associated with <code>myType</code>.
 The receiver is named <code>p</code> in the body of the function.
 
 <p>
+方法<code>get</code>依附于<code>myType</code>类型。<code>myType</code>对象在
+函数中对应<code>p</code>。
+
+<p>
 Methods are defined on named types.  If you convert the value
 to a different type, the new value will have the methods of the new type,
 not the old type.
 
 <p>
+方法在命名的类型上定义。如果，改变类型的话，那么就是针对新类型的另一个函数了。
+
+<p>
 You may define methods on a builtin type by declaring a new named type
 derived from it.  The new type is distinct from the builtin type.
+
+<p>
+如果要在内建类型上定义方法，则需要给内建类型重新指定一个名字，然后在新指定名字的类型上
+定义方法。新定义的类型和内建的类型是有区别的。
 
 <pre>
 type myInteger int
@@ -685,6 +706,9 @@ var v myInteger
 <p>
 Given this interface:
 
+<p>
+把方法抽象到接口：
+
 <pre>
 type myInterface interface {
 	get() int
@@ -695,6 +719,9 @@ type myInterface interface {
 <p>
 we can make <code>myType</code> satisfy the interface by adding
 
+<p>
+为了让我们前面定义的<code>myType</code>满足接口，需要再增加一个方法：
+
 <pre>
 func (p *myType) set(i int) { p.i = i }
 </pre>
@@ -703,6 +730,10 @@ func (p *myType) set(i int) { p.i = i }
 Now any function which takes <code>myInterface</code> as a parameter
 will accept a
 variable of type <code>*myType</code>.
+
+<p>
+现在，任何以<code>myInterface</code>类型作为参数的函数，都可以用<code>*myType</code>
+类型传递了。
 
 <pre>
 func getAndSet(x myInterface) {}
@@ -720,8 +751,17 @@ class, defining <code>set</code> and <code>get</code> for
 inherit from <code>myInterface</code>.  A type may satisfy multiple interfaces.
 
 <p>
+以C++的观点来看，如果把<code>myInterface</code>看作一个纯虚基类，那么实现了
+<code>set</code> 和 <code>get</code>方法的<code>*myType</code>自动成为
+了从<code>myInterface</code>纯虚基类继承的子类了。在Go中，一个类型可以同时
+实现多种接口。
+
+<p>
 An anonymous field may be used to implement something much like a C++ child
 class.
+
+<p>
+使用匿名成员，我们可以模拟C++中类的继承机制。
 
 <pre>
 type myChildType struct { myType; j int }
@@ -731,6 +771,9 @@ func (p *myChildType) get() int { p.j++; return p.myType.get() }
 <p>
 This effectively implements <code>myChildType</code> as a child of
 <code>myType</code>.
+
+<p>
+这里的<code>myChildType</code>可以看作是<code>myType</code>的子类。
 
 <pre>
 func f2() {
@@ -750,11 +793,22 @@ In this example, the <code>get</code> method was
 overridden, and the <code>set</code> method was inherited.
 
 <p>
+<code>myChildType</code>类型中是有<code>set</code>方法的。在go中，匿名成员的方法
+会默认被提升为类型本身的方法。因为<code>myChildType</code>含有一个<code>myType</code>
+类型的匿名成员，因此也就继承了<code>myType</code>中的<code>set</code>方法，另一个
+<code>get</code>方法则相当于被重载了。
+
+<p>
 This is not precisely the same as a child class in C++.
 When a method of an anonymous field is called,
 its receiver is the field, not the surrounding struct.
 In other words, methods on anonymous fields are not virtual functions.
 When you want the equivalent of a virtual function, use an interface.
+
+<p>
+不过这和C++也不是完全等价的。当一个匿名方法被调用的时候，方法对应的类型对象
+是匿名成员类型，并不是当前类型！换言之，匿名成员上的方法并不是C++中的虚函数。
+如果你需要模拟虚函数机制，那么可以使用接口。
 
 <p>
 A variable which has an interface type may be converted to have a
@@ -763,6 +817,11 @@ This is implemented dynamically
 at runtime, like C++ <code>dynamic_cast</code>.  Unlike
 <code>dynamic_cast</code>, there does
 not need to be any declared relationship between the two interfaces.
+
+<p>
+一个接口类型的变量可以通过接口的一个内建的特殊方法转换为另一个接口类型变量。
+这是由运行时库动态完成的，和C++中的<code>dynamic_cast</code>有些类似。
+但是在Go语言中，两个相互转换的接口类型之间并不需要什么信息。
 
 <pre>
 type myPrintInterface interface {
@@ -774,15 +833,17 @@ func f3(x myInterface) {
 </pre>
 
 <p>
-The conversion to <code>myPrintInterface</code> is entirely dynamic.
-It will
-work as long as the underlying type of x (the <em>dynamic type</em>) defines
-a <code>print</code> method.
+向<code>myPrintInterface</code>类型的转换是动态的。它可以工作在底层实现了
+<code>print</code>方法的变量上。
 
 <p>
 Because the conversion is dynamic, it may be used to implement generic
 programming similar to templates in C++.  This is done by
 manipulating values of the minimal interface.
+
+<p>
+因为，这里动态类型转换机制，我们可以用它来模拟实现C++中的模板功能。这里我们需要
+定一个最小的接口：
 
 <pre>
 type Any interface { }
@@ -795,6 +856,11 @@ values of the contained type.  As the typing is dynamic rather
 than static, there is no equivalent of the way that a C++ template may
 inline the relevant operations.  The operations are fully type-checked
 at runtime, but all operations will involve a function call.
+
+<p>
+该接口可以持有任意类型的数据，但是在使用的时候需要将该接口变量转换为需要的类型。
+因为，这里类型转换是动态实现的，因此，没有办法定义像C++中的内联函数。类型的验证
+由运行时库完成，我们可以调用该变量类型支持的所有方法。
 
 <pre>
 type iterator interface {
