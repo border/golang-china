@@ -266,16 +266,9 @@ A consequence of this is that in some cases Go does not permit you to
 use a line break.  For example, you may not write
 
 <p>
-Go中使用很少的分号，虽然每个语句之间实际上是用分号分割的。因为，go编译器会在非空行，
-
- code uses very few semicolons in practice.  Technically, all Go
-statements are terminated by a semicolon.  However, Go treats the end
-of a non-blank line as a semicolon unless the line is clearly
-incomplete (the exact rules are
-in <a href="go_spec.html#Semicolons">the language specification</a>).
-A consequence of this is that in some cases Go does not permit you to
-use a line break.  For example, you may not write
-
+Go中使用很少的分号，虽然每个语句之间实际上是用分号分割的。因为，go编译器会在看似
+完整的语句末尾自动添加分号（具体细节清参考<a href="go_spec.html#Semicolons">Go语言手册</a>）。
+当然，自动添加分号也可能带来一些问题。例如：
 
 <pre>
 func g()
@@ -285,6 +278,11 @@ func g()
 A semicolon will be inserted after <code>g()</code>, causing it to be
 a function declaration rather than a function definition.  Similarly,
 you may not write
+
+<p>
+在<code>g()</code>函数后面会被自动添加分号，导致函数编译出错。下面的代码也有类似的
+问题：
+
 <pre>
 if x {
 }
@@ -295,11 +293,19 @@ A semicolon will be inserted after the <code>}</code> preceding
 the <code>else</code>, causing a syntax error.
 
 <p>
+在第一个花括号<code>}</code>的后面会被自动添加分号，导致<code>else</code>语句
+出现语法错误。
+
+<p>
 Since semicolons do end statements, you may continue using them as in
 C++.  However, that is not the recommended style.  Idiomatic Go code
 omits unnecessary semicolons, which in practice is all of them other
 than the initial <for> loop clause and cases where you want several
 short statements on a single line.
+
+<p>
+分号可以用来分割语句，你仍然可以安装C++的方式来使用分号。不过Go语言中，常常省略不
+必要的分号。只有在 <for> 循环语句的初始化部分，或者一行写多个语句的时候才是必须的。
 
 <p>
 While we're on the topic, we recommend that rather than worry about
@@ -310,10 +316,19 @@ formatting.  While the style may initially seem odd, it is as good as
 any other style, and familiarity will lead to comfort.
 
 <p>
+继续前面的问题。我们并不用担心因为花括号的位置导致的编译错误，因此我们可以用 <code>gofmt</code> 
+来排版程序代码。<code>gofmt</code> 工具总是可以将代码排版成统一的风格。While the style may initially seem odd, it is as good as
+any other style, and familiarity will lead to comfort.
+
+<p>
 When using a pointer to a struct, you use <code>.</code> instead
 of <code>-&gt;</code>.
 Thus syntactically speaking a structure and a pointer to a structure
 are used in the same way.
+
+<p>
+当用指针访问结构体的时候，我们用<code>.</code>代替<code>-&gt;</code>语法。
+因此，用结构体类型和结构体指针类型访问结构体成员的语法是一样的。
 
 <pre>
 type myStruct struct { i int }
@@ -327,6 +342,10 @@ Go does not require parentheses around the condition of a <code>if</code>
 statement, or the expressions of a <code>for</code> statement, or the value of a
 <code>switch</code> statement.  On the other hand, it does require curly braces
 around the body of an <code>if</code> or <code>for</code> statement.
+
+<p>
+Go不要求在<code>if</code>语句的条件部分用小括弧，但是要求<code>if</code>后面的代码
+部分必须有花括弧。类似的规则也适用于<code>for</code>和<code>switch</code>等语句。
 
 <pre>
 if a &lt; b { f() }             // Valid
@@ -344,16 +363,29 @@ which makes it equivalent to a <code>while</code> statement.  Omitting the
 condition entirely is an endless loop.
 
 <p>
+Go语言中没有<code>while</code>和<code>do/while</code>循环语句。我们可以用只有一个
+条件语句的<code>for</code>来代替<code>while</code>循环。如果省略<code>for</code>
+的条件部分，则是一个无限循环。
+
+<p>
 Go permits <code>break</code> and <code>continue</code> to specify a label.
 The label must
 refer to a <code>for</code>, <code>switch</code>, or <code>select</code>
 statement.
 
 <p>
+Go增加了带标号的<code>break</code> 和<code>continue</code>语法。不过标号必须
+是针对<code>for</code>，<code>switch</code>或<code>select</code>代码段的。
+
+<p>
 In a <code>switch</code> statement, <code>case</code> labels do not fall
 through.  You can
 make them fall through using the <code>fallthrough</code> keyword.  This applies
 even to adjacent cases.
+
+<p>
+对于<code>switch</code>语句，<code>case</code>匹配后不会再继续匹配后续的部分。
+对于没有任何匹配的情况，可以用<code>fallthrough</code> 语句。
 
 <pre>
 switch i {
@@ -365,6 +397,9 @@ case 1:
 
 <p>
 But a <code>case</code> can have multiple values.
+
+<p>
+<code>case</code>语句还可以带多个值：
 
 <pre>
 switch i {
@@ -379,6 +414,10 @@ any type
 that supports the equality comparison operator, such as strings or
 pointers, can be used&mdash;and if the <code>switch</code>
 value is omitted it defaults to <code>true</code>.
+
+<p>
+<code>case</code>语句不一定必须是整数或整数常量。如果省略<code>switch</code>的
+要匹配的值，那么<code>case</code>可以是任意的条件语言。
 
 <pre>
 switch {
@@ -398,8 +437,16 @@ You cannot write <code>c = *p++</code>.  <code>*p++</code> is parsed as
 <code>(*p)++</code>.
 
 <p>
+<code>++</code>和<code>--</code>不再是表达式，它们只能在语句中使用。因此，
+<code>c = *p++</code>是错误的。语句<code>*p++</code>的含义也完全不同，在go中等价
+于<code>(*p)++</code>。
+
+<p>
 The <code>defer</code> statement may be used to call a function after
 the function containing the <code>defer</code> statement returns.
+
+<p>
+<code>defer</code>可以用于指定函数返回前要执行的语句。 
 
 <pre>
 fd := open("filename")
@@ -418,6 +465,11 @@ is used within a context that
 requires a typed value. This permits constants to be used relatively
 freely without requiring general implicit type conversion.
 
+<p>
+Go语言中的常量可以没有固定类型（<i>untyped</i>）。我们可以用<code>const</code>和一个
+<i>untyped</i>类型的初始值来定义<i>untyped</i>常量。如果是<i>untyped</i>常量，
+那么常量在使用的时候会根据上下文自动进行隐含的类型转换。这样，可以更自由的使用<i>untyped</i>常量。
+
 <pre>
 var a uint
 f(a + 1)  // untyped numeric constant "1" becomes typed as uint
@@ -427,6 +479,9 @@ f(a + 1)  // untyped numeric constant "1" becomes typed as uint
 The language does not impose any limits on the size of an untyped
 numeric constant or constant expression. A limit is only applied when
 a constant is used where a type is required.
+
+<p>
+<i>untyped</i>类型常量的大小也没有限制。只有在最终使用的地方才有大小的限制。
 
 <pre>
 const huge = 1 &lt;&lt; 100
@@ -439,6 +494,11 @@ Go does not support enums.  Instead, you can use the special name
 series of increasing
 value.  When an initialization expression is omitted for a <code>const</code>,
 it reuses the preceding expression.
+
+<p>
+Go没有枚举类型（enums）。作为代替，可以在一个独立的<code>const</code>区域中使用
+<code>iota</code>来生成递增的值。如果<code>const</code>中，常量没有初始值则会
+用前面的初始化表达式代替。
 
 <pre>
 const (
@@ -461,6 +521,11 @@ length of the slice.  The builtin <code>cap</code> function returns the
 capacity.
 
 <p>
+切片（slice）底层对应类结构体，主要包含以下信息：指向数据的指针，有效数据的数目，和总
+的内存空间大小。切片支持用<code>[]</code>语法获取底层数组的某个元素。内建的<code>len</code>
+方法可以获取切片的长度。内建的<code>cap</code>返回切片的最大容量。
+
+<p>
 Given an array, or another slice, a new slice is created via
 <code>a[I:J]</code>.  This
 creates a new slice which refers to <code>a</code>, starts at
@@ -478,6 +543,13 @@ the assignment <code>s = &ampa</code> is equivalent to
 <code>s = a[0:len(a)]</code>.
 
 <p>
+对于一个数组或另一个切片，我们用<code>a[I:J]</code>语句再它基础上创建一个新的切片。
+这个新创建的切片底层引用<code>a</code>（数组或之前的另一个切片），从数组的<code>I</code>位置
+开始，到数组的<code>J</code>位置结束。新切片的长度是<code>J - I</code>。新切片的
+容量是数组的容量减去切片在数组中的开始位置<code>I</code>。我们还可以将数组的地址直接赋给
+切片：<code>s = &a</code>，这默认是对应整个数组，和这个语句等价：<code>s = a[0:len(a)]</code>。
+
+<p>
 What this means is that Go uses slices for some cases where C++ uses pointers.
 If you create a value of type <code>[100]byte</code> (an array of 100 bytes,
 perhaps a
@@ -489,10 +561,21 @@ necessary to pass the length of the buffer; it is efficiently accessible via
 <code>len</code>.
 
 <p>
+因此，我们在在C++中使用指针的地方用切片来代替。例如，创建一个<code>[100]byte</code>类型的
+值（100个字节的数组，或许是做为缓冲用）。但是，在将数组传递给函数的时候不想复制整个数组（go语言
+中数组是值，函数参数传值是复制的），可以将函数参数定一个为<code>[]byte</code>切片类型，
+从而实现只传递数组地址的目的。不过我们并不需要像C++中那样传递缓存的长度——在Go中它们已经包含
+在切片信息中了。
+
+<p>
 The slice syntax may also be used with a string.  It returns a new string,
 whose value is a substring of the original string.
 Because strings are immutable, string slices can be implemented
 without allocating new storage for the slices's contents.
+
+<p>
+切片还可以应用于字符串。当需要将某个字符串的字串作为你新字符产返回的时候可以用切片代替。
+因为go中的字符串是不可修改的，因此使用字符串切片并不需要分配新的内存空间。
 
 <h2 id="Making_values">Making values 构造值对象</h2>
 
@@ -505,6 +588,12 @@ initializes it with the value <code>0</code>,
 and returns its address, which has type <code>*int</code>.
 Unlike in C++, <code>new</code> is a function, not an operator;
 <code>new int</code> is a syntax error.
+
+<p>
+Go有一个内建的<code>new</code>函数，用于在堆上为任意类型变量分配一个空间。新分配的
+内存会内自动初始化为0。例如，<code>new(int)</code>会在堆上分配一个整型大小的空间，
+然后初始化为<code>0</code>，然后返回<code>*int</code>类型的地址。和C++中不同的
+是，<code>new</code>是一个函数而不是运算符，因此<code>new int</code> 用法是错误的。
 
 <p>
 Map and channel values must be allocated using the builtin function
@@ -523,6 +612,14 @@ argument which sets the
 buffering capacity of the channel; the default is 0 (unbuffered).
 
 <p>
+对于字典和管道，必须用内建的<code>make</code>函数分配空间。对于没有初始化的字典或
+管道变量，会被自动初始化为<code>nil</code>。调用<code>make(map[int]int)</code>
+返回一个新的字典空间，类型为<code>map[int]int</code>。需要强调的是，<code>make</code>
+返回的是值，而不是指针！与此对应的是，字典和管道是通过引用传递的。对于<code>make</code>
+分配字典空间，还可以有一个可选的函数，用于指定字典的容量。如果是用于创建管道，则可选的参数
+对应管道的缓冲大小，默认0表示不缓存。
+
+<p>
 The <code>make</code> function may also be used to allocate a slice.
 In this case it
 allocates memory for the underlying array and returns a slice referring to it.
@@ -532,6 +629,14 @@ A second, optional, argument is the capacity of the slice.  For example,
 <code>new([20]int)[0:10]</code>.  Since
 Go uses garbage collection, the newly allocated array will be discarded
 sometime after there are no references to the returned slice.
+
+<p>
+<code>make</code>函数还可以用于创建切片。这时，会在堆中分配一个不可见的数组，然后返回
+对这个数组引用的切片。对于切片，<code>make</code>函数除了一个指定切片大小的参数外，
+还有一个可选的用于指定切片容量的参数（最多有3个参数）。例如，<code>make([]int, 10, 20)</code>，
+用于创建一个大小是10，容量是20的切片。当然，用<code>new</code>函数也能实现：
+<code>new([20]int)[0:10]</code>。go支持垃圾内存自动回收，因此新分配的内存空间没有
+任何切片引用的时候，可能会被自动释放。
 
 <h2 id="Interfaces">Interfaces 接口</h2>
 
