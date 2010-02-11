@@ -2543,17 +2543,33 @@ easy to return a detailed error description alongside the normal
 return value.  By convention, errors have type <code>os.Error</code>,
 a simple interface.
 </p>
+
+<p>
+一些函数在调用后一般会返回一些错误的标志。在Go中我们可以用返回返回多个值来
+方便地处理错误标志信息。一般情况下，错误都实现了<code>os.Error</code>
+接口。
+</p>
+
+
 <pre>
 type Error interface {
     String() string
 }
 </pre>
+
 <p>
 A library writer is free to implement this interface with a
 richer model under the covers, making it possible not only
 to see the error but also to provide some context.
 For example, <code>os.Open</code> returns an <code>os.PathError</code>.
 </p>
+
+<p>
+库的编写者一般会在<code>os.Error</code>接口的基础上扩展更多的信息，这样函数调用者
+可以知道错误的更多细节。例如：<code>os.Open</code>返回的是<code>os.PathError</code>
+类型错误（里面已经包含最基本的错误接口）。
+</p>
+
 <pre>
 // PathError records an error and the operation and
 // file path that caused it.
@@ -2567,13 +2583,20 @@ func (e *PathError) String() string {
     return e.Op + " " + e.Path + ": " + e.Error.String()
 }
 </pre>
+
 <p>
 <code>PathError</code>'s <code>String</code> generates
 a string like this:
 </p>
+
+<p>
+<code>PathError</code>生成的<code>String</code>错误信息如下：
+</p>
+
 <pre>
 open /etc/passwx: no such file or directory
 </pre>
+
 <p>
 Such an error, which includes the problematic file name, the
 operation, and the operating system error it triggered, is useful even
@@ -2583,11 +2606,22 @@ it is much more informative than the plain
 </p>
 
 <p>
+这个错误信息包含了要操作的文件名，对文件的具体操作，以及操作系统返回的错误信息。
+这样肯定比简单输出"no such file or directory"错误信息更有价值。
+</p>
+
+<p>
 Callers that care about the precise error details can
 use a type switch or a type assertion to look for specific
 errors and extract details.  For <code>PathErrors</code>
 this might include examining the internal <code>Error</code>
 field for recoverable failures.
+</p>
+
+<p>
+如果函数调用者想获取错误的全部细节，那么需要将错误结果从基本的类型动态转换到
+更具体的错误类型。例如：下面的代码将<code>Error</code>转换为<code>PathErrors</code>
+类型，因为后者的错误细细更加丰富。
 </p>
 
 <pre>
@@ -2622,13 +2656,21 @@ for instance, a URL, saving you typing the URL into the phone's tiny keyboard.
 </p>
 
 <p>
-Here's the complete program.
-An explanation follows.
+现在让我们来实现一个完整的程序：一个简单的web服务器。这其实是一个转发服务器。
+google的<a href="http://chart.apis.google.com">http://chart.apis.google.com</a>
+提供了一个将数据转换为图表的服务。不过那个图表的转换程序使用比较复杂，因为需要用户
+自己设置各种参数。不过我们这里的程序界面要稍微友好一点：因为我们只需要获取一小段数据，
+然后调用google的图表转换程序生存QR码（Quick Response缩写，二维条码），对于文本
+信息下编码。二维条码图像可以用手机上的摄像机采集，然后解析得到解码后的信息。
 </p>
 
 <p>
 Here's the complete program.
 An explanation follows.
+</p>
+
+<p>
+下面是完整的程序：
 </p>
 
 <pre>
@@ -2670,22 +2712,22 @@ func UrlHtmlFormatter(w io.Writer, v interface{}, fmt string) {
 
 const templateStr = `
 &lt;html&gt;
-&lt;head&gt;
-&lt;title&gt;QR Link Generator&lt;/title&gt;
-&lt;/head&gt;
+    &lt;head&gt;
+        &lt;title&gt;QR Link Generator&lt;/title&gt;
+    &lt;/head&gt;
 &lt;body&gt;
-{.section @}
-&lt;img src="http://chart.apis.google.com/chart?chs=300x300&amp;cht=qr&amp;choe=UTF-8&amp;chl={@|url+html}"
+    {.section @}
+    &lt;img src="http://chart.apis.google.com/chart?chs=300x300&amp;cht=qr&amp;choe=UTF-8&amp;chl={@|url+html}"
 /&gt;
-&lt;br&gt;
-{@|html}
-&lt;br&gt;
-&lt;br&gt;
-{.end}
-&lt;form action="/" name=f method="GET"&gt;&lt;input maxLength=1024 size=70
-name=s value="" title="Text to QR Encode"&gt;&lt;input type=submit
-value="Show QR" name=qr&gt;
-&lt;/form&gt;
+    &lt;br&gt;
+    {@|html}
+    &lt;br&gt;
+    &lt;br&gt;
+    {.end}
+    &lt;form action="/" name=f method="GET"&gt;
+        &lt;input maxLength=1024 size=70 name=s value="" title="Text to QR Encode"&gt;
+        &lt;input type=submit value="Show QR" name=qr&gt;
+    &lt;/form&gt;
 &lt;/body&gt;
 &lt;/html&gt;
 `
@@ -2698,16 +2740,34 @@ variable <code>templ</code> is where the fun happens. It builds an HTML template
 that will be executed by the server to display the page; more about
 that in a moment.
 </p>
+
+<p>
+<code>main</code>函数的开始部分比较简单。有一个flag选项用于指定HTTP服务器的监听端口。
+还有一个模板变量<code>templ</code>，主要用于保存HTML页面的生成模板，我们稍后会讨论。
+</p>
+
 <p>
 The <code>main</code> function parses the flags and, using the mechanism
 we talked about above, binds the function <code>QR</code> to the root path
 for the server.  Then <code>http.ListenAndServe</code> is called to start the
 server; it blocks while the server runs.
 </p>
+
+<p>
+<code>main</code>首先分析命令行选项，然后帮定<code>QR</code>函数为服务器的根目录
+处理函数。最后<code>http.ListenAndServe</code>启动服务器，并在服务器运行期间一直
+阻塞。
+</p>
+
 <p>
 <code>QR</code> just receives the request, which contains form data, and
 executes the template on the data in the form value named <code>s</code>.
 </p>
+
+<p>
+<code>QR</code>接收客户端请求，然后用表单中的<code>s</code>变量的值替换到模板。
+</p>
+
 <p>
 The template package, inspired by <a
 href="http://code.google.com/p/json-template">json-template</a>, is
@@ -2723,6 +2783,16 @@ to <code>{.end}</code> executes with the value of the data item <code>@</code>,
 which is a shorthand for &ldquo;the current item&rdquo;, which is the form value.
 (When the string is empty, this piece of the template is suppressed.)
 </p>
+
+<p>
+template包实现了<a href="http://code.google.com/p/json-template">json-template</a>。
+我们的程序的简洁正是得益于template包的强大功能。本质上，在执行<code>templ.Execute</code>的
+时候，根据需要替换调模板中的某些区域。这里的原始模板文本保存在<code>templateStr</code>中，
+其中花括弧部分对应模板的动作。在<code>{.section @}</code>和<code>{.end}</code>之间的
+以<code>@</code>开头的元素，在处理模板的时候会被替换。
+</p>
+
+
 <p>
 The snippet <code>{@|url+html}</code> says to run the data through the formatter
 installed in the formatter map (<code>fmap</code>)
@@ -2730,15 +2800,33 @@ under the name <code>"url+html"</code>.
 That is the function <code>UrlHtmlFormatter</code>, which sanitizes the string
 for safe display on the web page.
 </p>
+
+<p>
+标记<code>{@|url+html}</code>的意思是在格式化模板的时候，用格式化字典（<code>fmap</code>）
+中<code>"url+html"</code> 关键字对应的函数的处理标签的替代文本。这里的<code>UrlHtmlFormatter</code>
+函数，只是为了安全启见过滤包含的不合法信息。
+</p>
+
 <p>
 The rest of the template string is just the HTML to show when the page loads.
 If this is too quick an explanation, see the <a href="/pkg/template/">documentation</a>
 for the template package for a more thorough discussion.
 </p>
+
+<p>
+这里的模板只是用于显式的html页面。如果觉得上面的解释比较简略的话，可以看到template包的
+<a href="/pkg/template/">documentation</a>。
+</p>
+
 <p>
 And there you have it: a useful webserver in a few lines of code plus some
 data-driven HTML text.
 Go is powerful enough to make a lot happen in a few lines.
+</p>
+
+<p>
+我们仅仅用很少的代码加一些HTML文本就实现了一个有意思的webserver。使用go，往往用很少的
+代码就能实现强大的功能。
 </p>
 
 <!--
