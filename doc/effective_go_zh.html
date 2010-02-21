@@ -1726,6 +1726,16 @@ Interfaces with only one or two methods are common in Go code, and are
 usually given a name derived from the method, such as <code>io.Writer</code>
 for something that implements <code>Write</code>.
 </p>
+
+<p>
+Go中的接口提供了一类对象的抽象。我们在前面已经看到了关于接口的一些例子。
+我们可以给新定义的对象实现一个<code>String</code>方法，这样就可以用
+<code>Fprintf</code>输出该类型的值。同样，<code>Fprintf</code>可以将
+结果输出到任意实现了<code>Write</code>方法的对象。接口一般只包含一类方法，
+并且以ed后缀的方式命名，例如<code>io.Writer</code>接口对应<code>Write</code>
+方法实现。
+</p>
+
 <p>
 A type can implement multiple interfaces.
 For instance, a collection can be sorted
@@ -1735,6 +1745,14 @@ by the routines in package <code>sort</code> if it implements
 and it could also have a custom formatter.
 In this contrived example <code>Sequence</code> satisfies both.
 </p>
+
+<p>
+一种类型可以实现多个接口。例如，如果想支持<code>sort</code>包中的排序
+方法，那么只需要实现<code>sort.Interface</code>接口的<code>Len()</code>、
+<code>Less()</code>、<code>Swap(i, j int)</code>方法就可以了。下面的例子
+实现了<code>sort.Interface</code>接口的同时，还定制了输出函数。
+</p>
+
 <pre>
 type Sequence []int
 
