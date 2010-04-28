@@ -163,7 +163,7 @@ Echo
 
 Next up, here's a version of the Unix utility "echo(1)":
 
-下面，是Unix系统中"echo(1)"命令的简化实现：
+下面的例子是Unix系统中"echo"命令的简化版：
 
 --PROG progs/echo.go /package/ END
 
@@ -174,9 +174,9 @@ Notice that we can group declarations of the same sort into
 parenthesized lists, one item per line, as on lines 7-10 and 14-17.
 But it's not necessary to do so; we could have said
 
-程序虽然很小，但是包含了go语言的更多特性。在前面的例子中，我们演示了用"func"定义main
-函数。其他定义相关的关键字还有"var"、"const"和"type"等。我们还可以像"import"那样，每次
-导入一组名字，每个一行（如7－10和14－17行所示）。当然，每个变量分开定义，如：
+程序虽然很小，但是包含了go语言的更多特性。在前面的例子中，我们演示了如何用"func"定义函数。
+类似的关键字还有："var"、"const"和"type"等，它们都可以定义相关的元素，用法和"import"一致。
+我们也可以小括弧定义一组类型一样的元素（如7－10和14－17行所示）。当然，也可以分开定义：
 
 	const Space = " "
 	const Newline = "\n"
