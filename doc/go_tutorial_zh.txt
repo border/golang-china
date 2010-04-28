@@ -22,9 +22,9 @@ Also, slides from a 3-day course about Go are available:
 <a href='/doc/GoCourseDay2.pdf'>Day 2</a>,
 <a href='/doc/GoCourseDay3.pdf'>Day 3</a>.
 
-本文是关于Go编程语言的基础教程，主要面向有C/C++基础的读者。本文并不是一个语言的完整指南，关于
-Go的具体细节请参考 <a href='/doc/go_spec.html'>语言规范</a> 一文。在学习完入门教程后，
-还可以继续看 <a href='/doc/effective_go.html'>Effective Go</a> ，这个文档
+本文是关于Go编程语言的基础教程，主要面向有C/C++基础的读者。它并不是一个语言的完整指南，关于
+Go的具体细节请参考 <a href='/doc/go_spec.html'>语言规范</a> 一文。在读完这个入门教程后，
+深入的华可以继续看 <a href='/doc/effective_go.html'>Effective Go</a> ，这个文档
 将涉及到Go语言的更多特性。此外，还有一个《Go语言三日教程》系列讲座：
 <a href='/doc/GoCourseDay1.pdf'>第一日</a>,
 <a href='/doc/GoCourseDay2.pdf'>第二日</a>,
@@ -34,15 +34,15 @@ The presentation here proceeds through a series of modest programs to illustrate
 key features of the language.  All the programs work (at time of writing) and are
 checked into the repository in the directory <a href='/doc/progs'>"/doc/progs/"</a>.
 
-下面将通过一些小程序来掩饰语言的一些关键特性。所有的演示程序都是可以运行的，程序的代码在安装目录的
+下面将通过一些小程序来演示go语言的一些关键特性。所有的演示程序都是可以运行的，程序的代码在安装目录的
 <a href='/doc/progs'>"/doc/progs/"</a>子目录中。
 
 Program snippets are annotated with the line number in the original file; for
 cleanliness, blank lines remain blank.
 
-文中的代码篇都都会以代码在源文件中的行号标注。为了清晰起见，我们忽略了源代码文件空白行的行号。
+文中的代码都会标出在源代码文件中对应的行号。同时为了清晰起见，我们忽略了源代码文件空白行的行号。
 
-Hello, World
+Hello, World 你好，世界
 ----
 
 Let's start in the usual way:
@@ -56,15 +56,15 @@ It may also import other packages to use their facilities.
 This program imports the package "fmt" to gain access to
 our old, now capitalized and package-qualified, friend, "fmt.Printf".
 
-每个Go源文件开头都有一个"package"声明语句，指明文件所在的包。同时，我们也可以根据具体的需要
-来导入（import语句）特定的包文件。在这个例子中，我们通过导入“fmt”包来使用我们熟悉的printf函数。
-不过在Go语言中，Printf函数的开头是大写字母，并且需要fmt包名作为前缀：fmt.Printf。
+每个Go源文件开头都有一个"package"声明语句，指明源文件所在的包。同时，我们也可以根据具体的需要
+来选择导入（import语句）特定功能的包。在这个例子中，我们通过导入“fmt”包来使用我们熟悉的printf函数。
+不过在Go语言中，Printf函数的是大写字母开头，并且以fmt包名作为前缀：fmt.Printf。
 
 Functions are introduced with the "func" keyword.
 The "main" package's "main" function is where the program starts running (after
 any initialization).
 
-函数定义要使用“func“关键字。整个程序从main包中的main函数开始执行（在变量和包初始化之后）。
+关键字“func“用于定义函数。在所有初始化完成后，程序从main包中的main函数开始执行。
 
 String constants can contain Unicode characters, encoded in UTF-8.
 (In fact, Go source files are defined to be encoded in UTF-8.)
@@ -73,14 +73,14 @@ String constants can contain Unicode characters, encoded in UTF-8.
 
 The comment convention is the same as in C++:
 
-代码注视的方式和C++类似：
+代码注释的方式和C++类似：
 
 	/* ... */
 	// ...
 
 Later we'll have much more to say about printing.
 
-稍后，我们还会涉及到打印函数的更多技术。
+稍后，我们还有很多的关于打印的话题。
 
 Semicolons 分号
 ----
@@ -90,16 +90,16 @@ code, the only place you typically see semicolons is separating the
 clauses of "for" loops and the like; they are not necessary after
 every statement.
 
-比较细心的读者可能已经发现前面的代码中没有出现分号“;”。在Go语言中，只有在for循环的
-初始化部分经常用到分号。在代码段的末尾分号都不是必须的。
+比较细心的读者可能发现前面的代码中基本没有出现分号“;”。其实在go语言中，只有在分隔
+for循环的初始化语句时才经常用到；但是代码段末尾的分号一般都是省略的。
 
 In fact, what happens is that the formal language uses semicolons,
 much as in C or Java, but they are inserted automatically
 at the end of every line that looks like the end of a statement. You
 don't need to type them yourself.
 
-你可以想在C或JAVA中那样使用分号。但是很多情况下，分号可以由Go编译起自己添加，用户不
-需要写全部的分号。
+当然，你也可以像C或JAVA中那样使用分号。不过在大多数情况下，一个完整语句末尾的分号
+都是有go编译器自动添加的——用户不需要输入每个分号。
 
 For details about how this is done you can see the language
 specification, but in practice all you need to know is that you
@@ -108,9 +108,9 @@ them in if you want to write multiple statements per line.) As an
 extra help, you can also leave out a semicolon immediately before
 a closing brace.
 
-关于细节部分，可以查看Go语言说明文档。不过在实际写代码时，只需要记得一行末尾的分号
-可以省略就可以了（对于一行写多个语句的，可以用分号隔开）。另外一点，在退出某个区域的
-时候，分号也是可以省略的。
+关于分号的详细描述，可以查看Go语言说明文档。不过在实际写代码时，只需要记得一行末尾的分号
+可以省略就可以了（对于一行写多个语句的，可以用分号隔开）。还有一个额外的好处是：在退出
+大括号包围的子区域时，分号也是可以省略的。
 
 This approach makes for clean-looking, semicolon-free code.  The
 one surprise is that it's important to put the opening
@@ -119,9 +119,9 @@ the "if"; if you don't, there are situations that may not compile
 or may give the wrong result.  The language forces the brace style
 to some extent.
 
-极端情况下，甚至可以写出没有任何分号的代码。不过有一个重要的地方，对于"if"等语句，
-需要将后面代码段的开始花括弧放在"if"语句的同一行，如果不这样的话可能出现编译错误。
-Go语言强制将开始花括弧放在同一行末尾的风格。
+在一些特殊情况下，甚至可以写出没有任何分号的代码。不过有一个重要的地方：对于"if"等
+后面有大括弧的语句，需要将左大括弧放在"if"语句的同一行，如果不这样的话可能出现编译错误。
+Go语言强制使用将开始大括弧放在同一行末尾的编码风格。
 
 Compiling 编译
 ----
@@ -136,12 +136,12 @@ a more robust run-time system although "gccgo" is catching up.
 
 Go是一个编译型的语言。目前有两种编译器，其中"Gccgo"采用GCC作为编译后端。另外还有
 根据处理器架构命名的编译器：针对64位x86结构为"6g"，针对32位x86结构的为"8g"等等。
-这些go专用的编译器可以产生比gccgo更高效的目标代码，也有更健壮的运行时系统。当然，gccgo
-编译器也在快速的完善之中。
+这些go专用的编译器编译很快，但是产生的目标代码效率比gccgo稍差一点。目前（2009年底），
+go专用的编译器的运行时系统比"gccgo"也要相对健壮一点。
 
 Here's how to compile and run our program.  With "6g", say,
 
-下面看看如何编译并运行程序。先是针对64位x86结构的“6g”：
+下面看看如何编译并运行程序。先是用针对64位x86结构处理器的“6g”：
 
 	$ 6g helloworld.go  # compile; object goes into helloworld.6
 	$ 6l helloworld.6   # link; output goes into 6.out
