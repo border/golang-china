@@ -430,7 +430,7 @@ func (t *thread) wait() {
 		t.logTrace("beginning wait")
 		ev.Waitmsg, ev.err = os.Wait(t.tid, syscall.WALL)
 		if ev.err == nil && ev.Pid != t.tid {
-			panic("Wait returned pid ", ev.Pid, " wanted ", t.tid)
+			panic(fmt.Sprint("Wait returned pid ", ev.Pid, " wanted ", t.tid))
 		}
 		if ev.StopSignal() == syscall.SIGSTOP && t.ignoreNextSigstop {
 			// Spurious SIGSTOP.  See Thread.Stop().
@@ -1249,13 +1249,13 @@ func (p *process) attachAllThreads() os.Error {
 // newProcess creates a new process object and starts its monitor thread.
 func newProcess(pid int) *process {
 	p := &process{
-		pid: pid,
-		threads: make(map[int]*thread),
-		breakpoints: make(map[uintptr]*breakpoint),
-		ready: make(chan bool, 1),
-		debugEvents: make(chan *debugEvent),
-		debugReqs: make(chan *debugReq),
-		stopReq: make(chan os.Error),
+		pid:                pid,
+		threads:            make(map[int]*thread),
+		breakpoints:        make(map[uintptr]*breakpoint),
+		ready:              make(chan bool, 1),
+		debugEvents:        make(chan *debugEvent),
+		debugReqs:          make(chan *debugReq),
+		stopReq:            make(chan os.Error),
 		transitionHandlers: new(vector.Vector),
 	}
 

@@ -32,17 +32,17 @@ arg=0
 
 TEXT	_mulv(SB), $0
 	MOVW	0(FP), R0
-	MOVW	8(FP), R2		/* l0 */
-	MOVW	4(FP), R3	  /* h0 */
-	MOVW	16(FP), R4	  /* l1 */
-	MOVW	12(FP), R5	  /* h1 */
+	MOVW	4(FP), R2	/* l0 */
+	MOVW	8(FP), R11	/* h0 */
+	MOVW	12(FP), R4	/* l1 */
+	MOVW	16(FP), R5	/* h1 */
 	UMULL(4, 2, 7, 6, 0)
-	MUL(3, 4, 8, 0)
+	MUL(11, 4, 8, 0)
 	ADD	R8, R7
 	MUL(2, 5, 8, 0)
 	ADD	R8, R7
-	MOVW	R6, 4(R(arg))
-	MOVW	R7, 0(R(arg))
+	MOVW	R6, 0(R(arg))
+	MOVW	R7, 4(R(arg))
 	RET
 
 
@@ -167,17 +167,23 @@ out:
 	B	out
 
 // trampoline for _sfloat2. passes LR as arg0 and
-// saves registers R0-R11 on the stack for mutation
-// by _sfloat2
-TEXT	_sfloat(SB), 7, $52 // 4 arg + 12*4 saved regs
+// saves registers R0-R13 and CPSR on the stack. R0-R12 and CPSR flags can
+// be changed by _sfloat2.
+TEXT	_sfloat(SB), 7, $64 // 4 arg + 14*4 saved regs + cpsr
 	MOVW	R14, 4(R13)
 	MOVW	R0, 8(R13)
 	MOVW	$12(R13), R0
-	MOVM.IA.W	[R1-R11], (R0)
+	MOVM.IA.W	[R1-R12], (R0)
+	MOVW	$68(R13), R1 // correct for frame size
+	MOVW	R1, 60(R13)
+	WORD	$0xe10f1000 // mrs r1, cpsr
+	MOVW	R1, 64(R13)
 	BL	_sfloat2(SB)
 	MOVW	R0, 0(R13)
+	MOVW	64(R13), R1
+	WORD	$0xe128f001	// msr cpsr_f, r1
 	MOVW	$12(R13), R0
-	MOVM.IA.W	(R0), [R1-R11]
+	MOVM.IA.W	(R0), [R1-R12]
 	MOVW	8(R13), R0
 	RET
 			

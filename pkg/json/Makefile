@@ -7,8 +7,9 @@ include ../../Make.$(GOARCH)
 TARG=json
 GOFILES=\
 	decode.go\
-	error.go\
-	parse.go\
-	struct.go\
+	encode.go\
+	indent.go\
+	scanner.go\
+	stream.go\
 
 include ../../Make.pkg

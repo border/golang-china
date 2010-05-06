@@ -23,6 +23,13 @@ extern byte data[];
 extern byte etext[];
 extern byte end[];
 
+static G *fing;
+static Finalizer *finq;
+static int32 fingwait;
+
+static void sweepblock(byte*, int64, uint32*, int32);
+static void runfinq(void);
+
 enum {
 	PtrSize = sizeof(void*)
 };
@@ -33,11 +40,11 @@ scanblock(int32 depth, byte *b, int64 n)
 	int32 off;
 	void *obj;
 	uintptr size;
-	uint32 *ref;
+	uint32 *refp, ref;
 	void **vp;
 	int64 i;
 
-	if(Debug)
+	if(Debug > 1)
 		printf("%d scanblock %p %D\n", depth, b, n);
 	off = (uint32)(uintptr)b & (PtrSize-1);
 	if(off) {
@@ -49,20 +56,36 @@ scanblock(int32 depth, byte *b, int64 n)
 	n /= PtrSize;
 	for(i=0; i<n; i++) {
 		obj = vp[i];
-		if(obj == nil || (byte*)obj < mheap.min || (byte*)obj >= mheap.max)
+		if(obj == nil)
 			continue;
-		if(mlookup(obj, &obj, &size, &ref)) {
-			if(*ref == RefFree || *ref == RefStack)
+		if(mheap.closure_min != nil && mheap.closure_min <= (byte*)obj && (byte*)obj < mheap.closure_max) {
+			if((((uintptr)obj) & 63) != 0)
 				continue;
-			if(*ref == (RefNone|RefNoPointers)) {
-				*ref = RefSome|RefNoPointers;
+
+			// Looks like a Native Client closure.
+			// Actual pointer is pointed at by address in first instruction.
+			// Embedded pointer starts at byte 2.
+			// If it is f4f4f4f4 then that space hasn't been
+			// used for a closure yet (f4 is the HLT instruction).
+			// See nacl/386/closure.c for more.
+			void **pp;
+			pp = *(void***)((byte*)obj+2);
+			if(pp == (void**)0xf4f4f4f4)	// HLT... - not a closure after all
 				continue;
-			}
-			if(*ref == RefNone) {
-				if(Debug)
-					printf("%d found at %p: ", depth, &vp[i]);
-				*ref = RefSome;
-				scanblock(depth+1, obj, size);
+			obj = *pp;
+		}
+		if(mheap.min <= (byte*)obj && (byte*)obj < mheap.max) {
+			if(mlookup(obj, &obj, &size, nil, &refp)) {
+				ref = *refp;
+				switch(ref & ~RefFlags) {
+				case RefNone:
+					if(Debug > 1)
+						printf("%d found at %p: ", depth, &vp[i]);
+					*refp = RefSome | (ref & RefFlags);
+					if(!(ref & RefNoPointers))
+						scanblock(depth+1, obj, size);
+					break;
+				}
 			}
 		}
 	}
@@ -78,12 +101,29 @@ scanstack(G *gp)
 		sp = (byte*)&gp;
 	else
 		sp = gp->sched.sp;
+	if(Debug > 1)
+		printf("scanstack %d %p\n", gp->goid, sp);
 	stk = (Stktop*)gp->stackbase;
 	while(stk) {
 		scanblock(0, sp, (byte*)stk - sp);
 		sp = stk->gobuf.sp;
 		stk = (Stktop*)stk->stackbase;
 	}
+}
+
+static void
+markfin(void *v)
+{
+	uintptr size;
+	uint32 *refp;
+
+	size = 0;
+	refp = nil;
+	if(!mlookup(v, &v, &size, nil, &refp) || !(*refp & RefHasFinalizer))
+		throw("mark - finalizer inconsistency");
+	
+	// do not mark the finalizer block itself.  just mark the things it points at.
+	scanblock(1, v, size);
 }
 
 static void
@@ -106,6 +146,7 @@ mark(void)
 		case Gdead:
 			break;
 		case Grunning:
+		case Grecovery:
 			if(gp != g)
 				throw("mark - world not stopped");
 			scanstack(gp);
@@ -117,66 +158,88 @@ mark(void)
 			break;
 		}
 	}
+
+	// mark things pointed at by objects with finalizers
+	walkfintab(markfin);
 }
 
+// free RefNone, free & queue finalizers for RefNone|RefHasFinalizer, reset RefSome
 static void
 sweepspan(MSpan *s)
 {
-	int32 i, n, npages, size;
+	int32 n, npages, size;
 	byte *p;
-
-	if(s->state != MSpanInUse)
-		return;
+	uint32 ref, *gcrefp, *gcrefep;
+	MCache *c;
+	Finalizer *f;
 
 	p = (byte*)(s->start << PageShift);
 	if(s->sizeclass == 0) {
 		// Large block.
-		switch(s->gcref0) {
-		default:
-			throw("bad 'ref count'");
-		case RefFree:
-		case RefStack:
-			break;
+		ref = s->gcref0;
+		switch(ref & ~(RefFlags^RefHasFinalizer)) {
 		case RefNone:
-		case RefNone|RefNoPointers:
-			if(Debug)
-				printf("free %D at %p\n", (uint64)s->npages<<PageShift, p);
-			free(p);
+			// Free large object.
+			mstats.alloc -= s->npages<<PageShift;
+			runtime_memclr(p, s->npages<<PageShift);
+			if(ref & RefProfiled)
+				MProf_Free(p, s->npages<<PageShift);
+			s->gcref0 = RefFree;
+			MHeap_Free(&mheap, s, 1);
 			break;
+		case RefNone|RefHasFinalizer:
+			f = getfinalizer(p, 1);
+			if(f == nil)
+				throw("finalizer inconsistency");
+			f->arg = p;
+			f->next = finq;
+			finq = f;
+			ref &= ~RefHasFinalizer;
+			// fall through
 		case RefSome:
-		case RefSome|RefNoPointers:
-//printf("gc-mem 1 %D\n", (uint64)s->npages<<PageShift);
-			s->gcref0 = RefNone;	// set up for next mark phase
+		case RefSome|RefHasFinalizer:
+			s->gcref0 = RefNone | (ref&RefFlags);
 			break;
 		}
 		return;
 	}
 
 	// Chunk full of small blocks.
-	// Must match computation in MCentral_Grow.
-	size = class_to_size[s->sizeclass];
-	npages = class_to_allocnpages[s->sizeclass];
-	n = (npages << PageShift) / (size + RefcountOverhead);
-	for(i=0; i<n; i++) {
-		switch(s->gcref[i]) {
-		default:
-			throw("bad 'ref count'");
-		case RefFree:
-		case RefStack:
-			break;
+	MGetSizeClassInfo(s->sizeclass, &size, &npages, &n);
+	gcrefp = s->gcref;
+	gcrefep = s->gcref + n;
+	for(; gcrefp < gcrefep; gcrefp++, p += size) {
+		ref = *gcrefp;
+		if(ref < RefNone)	// RefFree or RefStack
+			continue;
+		switch(ref & ~(RefFlags^RefHasFinalizer)) {
 		case RefNone:
-		case RefNone|RefNoPointers:
-			if(Debug)
-				printf("free %d at %p\n", size, p+i*size);
-			free(p + i*size);
+			// Free small object.
+			if(ref & RefProfiled)
+				MProf_Free(p, size);
+			*gcrefp = RefFree;
+			c = m->mcache;
+			if(size > sizeof(uintptr))
+				((uintptr*)p)[1] = 1;	// mark as "needs to be zeroed"
+			mstats.alloc -= size;
+			mstats.by_size[s->sizeclass].nfree++;
+			MCache_Free(c, p, s->sizeclass, size);
 			break;
+		case RefNone|RefHasFinalizer:
+			f = getfinalizer(p, 1);
+			if(f == nil)
+				throw("finalizer inconsistency");
+			f->arg = p;
+			f->next = finq;
+			finq = f;
+			ref &= ~RefHasFinalizer;
+			// fall through
 		case RefSome:
-		case RefSome|RefNoPointers:
-			s->gcref[i] = RefNone;	// set up for next mark phase
+		case RefSome|RefHasFinalizer:
+			*gcrefp = RefNone | (ref&RefFlags);
 			break;
 		}
 	}
-//printf("gc-mem %d %d\n", s->ref, size);
 }
 
 static void
@@ -184,9 +247,9 @@ sweep(void)
 {
 	MSpan *s;
 
-	// Sweep all the spans.
 	for(s = mheap.allspans; s != nil; s = s->allnext)
-		sweepspan(s);
+		if(s->state == MSpanInUse)
+			sweepspan(s);
 }
 
 // Semaphore, not Lock, so that the goroutine
@@ -205,10 +268,21 @@ static uint32 gcsema = 1;
 // extra memory used).
 static int32 gcpercent = -2;
 
+static void
+stealcache(void)
+{
+	M *m;
+	
+	for(m=allm; m; m=m->alllink)
+		MCache_ReleaseAll(m->mcache);
+}
+
 void
 gc(int32 force)
 {
+	int64 t0, t1;
 	byte *p;
+	Finalizer *fp;
 
 	// The gc is turned off (via enablegc) until
 	// the bootstrap has completed.
@@ -233,18 +307,78 @@ gc(int32 force)
 	if(gcpercent < 0)
 		return;
 
-//printf("gc...\n");
 	semacquire(&gcsema);
+	t0 = nanotime();
 	m->gcing = 1;
 	stoptheworld();
 	if(mheap.Lock.key != 0)
 		throw("mheap locked during gc");
-	if(force || mstats.inuse_pages >= mstats.next_gc) {
+	if(force || mstats.heap_alloc >= mstats.next_gc) {
 		mark();
 		sweep();
-		mstats.next_gc = mstats.inuse_pages+mstats.inuse_pages*gcpercent/100;
+		stealcache();
+		mstats.next_gc = mstats.heap_alloc+mstats.heap_alloc*gcpercent/100;
 	}
 	m->gcing = 0;
+
+	m->locks++;	// disable gc during the mallocs in newproc
+	fp = finq;
+	if(fp != nil) {
+		// kick off or wake up goroutine to run queued finalizers
+		if(fing == nil)
+			fing = newproc1((byte*)runfinq, nil, 0, 0);
+		else if(fingwait) {
+			fingwait = 0;
+			ready(fing);
+		}
+	}
+	m->locks--;
+
+	t1 = nanotime();
+	mstats.numgc++;
+	mstats.pause_ns += t1 - t0;
+	if(mstats.debuggc)
+		printf("pause %D\n", t1-t0);
 	semrelease(&gcsema);
 	starttheworld();
+	
+	// give the queued finalizers, if any, a chance to run
+	if(fp != nil)
+		gosched();
+}
+
+static void
+runfinq(void)
+{
+	Finalizer *f, *next;
+	byte *frame;
+
+	for(;;) {
+		// There's no need for a lock in this section
+		// because it only conflicts with the garbage
+		// collector, and the garbage collector only
+		// runs when everyone else is stopped, and
+		// runfinq only stops at the gosched() or
+		// during the calls in the for loop.
+		f = finq;
+		finq = nil;
+		if(f == nil) {
+			fingwait = 1;
+			g->status = Gwaiting;
+			gosched();
+			continue;
+		}
+		for(; f; f=next) {
+			next = f->next;
+			frame = mal(sizeof(uintptr) + f->nret);
+			*(void**)frame = f->arg;
+			reflect·call((byte*)f->fn, frame, sizeof(uintptr) + f->nret);
+			free(frame);
+			f->fn = nil;
+			f->arg = nil;
+			f->next = nil;
+			free(f);
+		}
+		gc(1);	// trigger another gc to clean up the finalized objects, if possible
+	}
 }

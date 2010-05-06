@@ -186,6 +186,63 @@ func (v *Float64Value) Set(x float64) {
 // Set sets v to the value x.
 func (v *Float64Value) SetValue(x Value) { v.Set(x.(*Float64Value).Get()) }
 
+// ComplexValue represents a complex value.
+type ComplexValue struct {
+	value
+}
+
+// Get returns the underlying complex value.
+func (v *ComplexValue) Get() complex { return *(*complex)(v.addr) }
+
+// Set sets v to the value x.
+func (v *ComplexValue) Set(x complex) {
+	if !v.canSet {
+		panic(cannotSet)
+	}
+	*(*complex)(v.addr) = x
+}
+
+// Set sets v to the value x.
+func (v *ComplexValue) SetValue(x Value) { v.Set(x.(*ComplexValue).Get()) }
+
+// Complex64Value represents a complex64 value.
+type Complex64Value struct {
+	value
+}
+
+// Get returns the underlying complex64 value.
+func (v *Complex64Value) Get() complex64 { return *(*complex64)(v.addr) }
+
+// Set sets v to the value x.
+func (v *Complex64Value) Set(x complex64) {
+	if !v.canSet {
+		panic(cannotSet)
+	}
+	*(*complex64)(v.addr) = x
+}
+
+// Set sets v to the value x.
+func (v *Complex64Value) SetValue(x Value) { v.Set(x.(*Complex64Value).Get()) }
+
+// Complex128Value represents a complex128 value.
+type Complex128Value struct {
+	value
+}
+
+// Get returns the underlying complex128 value.
+func (v *Complex128Value) Get() complex128 { return *(*complex128)(v.addr) }
+
+// Set sets v to the value x.
+func (v *Complex128Value) Set(x complex128) {
+	if !v.canSet {
+		panic(cannotSet)
+	}
+	*(*complex128)(v.addr) = x
+}
+
+// Set sets v to the value x.
+func (v *Complex128Value) SetValue(x Value) { v.Set(x.(*Complex128Value).Get()) }
+
 // IntValue represents an int value.
 type IntValue struct {
 	value
@@ -446,7 +503,7 @@ func (v *UnsafePointerValue) SetValue(x Value) {
 
 func typesMustMatch(t1, t2 Type) {
 	if t1 != t2 {
-		panicln("type mismatch:", t1.String(), "!=", t2.String())
+		panic("type mismatch: " + t1.String() + " != " + t2.String())
 	}
 }
 
@@ -514,7 +571,7 @@ func (v *ArrayValue) Elem(i int) Value {
 	typ := v.typ.(*ArrayType).Elem()
 	n := v.Len()
 	if i < 0 || i >= n {
-		panic("index", i, "in array len", n)
+		panic("array index out of bounds")
 	}
 	p := addr(uintptr(v.addr()) + uintptr(i)*typ.Size())
 	return newValue(typ, p, v.canSet)
@@ -555,7 +612,7 @@ func (v *SliceValue) addr() addr { return addr(v.slice().Data) }
 func (v *SliceValue) SetLen(n int) {
 	s := v.slice()
 	if n < 0 || n > int(s.Cap) {
-		panicln("SetLen", n, "with capacity", s.Cap)
+		panic("reflect: slice length out of range in SetLen")
 	}
 	s.Len = n
 }
@@ -585,7 +642,7 @@ func (v *SliceValue) Get() uintptr {
 func (v *SliceValue) Slice(beg, end int) *SliceValue {
 	cap := v.Cap()
 	if beg < 0 || end < beg || end > cap {
-		panic("slice bounds [", beg, ":", end, "] with capacity ", cap)
+		panic("slice index out of bounds")
 	}
 	typ := v.typ.(*SliceType)
 	s := new(SliceHeader)
@@ -600,7 +657,7 @@ func (v *SliceValue) Elem(i int) Value {
 	typ := v.typ.(*SliceType).Elem()
 	n := v.Len()
 	if i < 0 || i >= n {
-		panicln("index", i, "in array of length", n)
+		panic("reflect: slice index out of range")
 	}
 	p := addr(uintptr(v.addr()) + uintptr(i)*typ.Size())
 	return newValue(typ, p, v.canSet)
@@ -611,8 +668,8 @@ func (v *SliceValue) Elem(i int) Value {
 func MakeSlice(typ *SliceType, len, cap int) *SliceValue {
 	s := &SliceHeader{
 		Data: uintptr(unsafe.NewArray(typ.Elem(), cap)),
-		Len: len,
-		Cap: cap,
+		Len:  len,
+		Cap:  cap,
 	}
 	return newValue(typ, addr(s), true).(*SliceValue)
 }
@@ -791,7 +848,7 @@ type tiny struct {
 	b byte
 }
 
-// Call calls the function v with input parameters in.
+// Call calls the function fv with input parameters in.
 // It returns the function's output parameters as Values.
 func (fv *FuncValue) Call(in []Value) []Value {
 	var structAlign = Typeof((*tiny)(nil)).(*PtrType).Elem().Size()
@@ -981,12 +1038,22 @@ func (v *MapValue) Set(x *MapValue) {
 	if !v.canSet {
 		panic(cannotSet)
 	}
+	if x == nil {
+		*(**uintptr)(v.addr) = nil
+		return
+	}
 	typesMustMatch(v.typ, x.typ)
 	*(*uintptr)(v.addr) = *(*uintptr)(x.addr)
 }
 
 // Set sets v to the value x.
-func (v *MapValue) SetValue(x Value) { v.Set(x.(*MapValue)) }
+func (v *MapValue) SetValue(x Value) {
+	if x == nil {
+		v.Set(nil)
+		return
+	}
+	v.Set(x.(*MapValue))
+}
 
 // Get returns the uintptr value of v.
 // It is mainly useful for printing.
@@ -1089,6 +1156,10 @@ func (v *PtrValue) Get() uintptr { return *(*uintptr)(v.addr) }
 // Set assigns x to v.
 // The new value x must have the same type as v.
 func (v *PtrValue) Set(x *PtrValue) {
+	if x == nil {
+		*(**uintptr)(v.addr) = nil
+		return
+	}
 	if !v.canSet {
 		panic(cannotSet)
 	}
@@ -1099,7 +1170,13 @@ func (v *PtrValue) Set(x *PtrValue) {
 }
 
 // Set sets v to the value x.
-func (v *PtrValue) SetValue(x Value) { v.Set(x.(*PtrValue)) }
+func (v *PtrValue) SetValue(x Value) {
+	if x == nil {
+		v.Set(nil)
+		return
+	}
+	v.Set(x.(*PtrValue))
+}
 
 // PointTo changes v to point to x.
 func (v *PtrValue) PointTo(x Value) {
@@ -1194,6 +1271,16 @@ func (t *StructValue) FieldByName(name string) Value {
 	return nil
 }
 
+// FieldByNameFunc returns the struct field with a name that satisfies the
+// match function.
+// The result is nil if no field was found.
+func (t *StructValue) FieldByNameFunc(match func(string) bool) Value {
+	if f, ok := t.Type().(*StructType).FieldByNameFunc(match); ok {
+		return t.FieldByIndex(f.Index)
+	}
+	return nil
+}
+
 // NumField returns the number of fields in the struct.
 func (v *StructValue) NumField() int { return v.typ.(*StructType).NumField() }
 
@@ -1246,6 +1333,12 @@ func newValue(typ Type, addr addr, canSet bool) Value {
 		return (*Float32Value)(v)
 	case *Float64Type:
 		return (*Float64Value)(v)
+	case *ComplexType:
+		return (*ComplexValue)(v)
+	case *Complex64Type:
+		return (*Complex64Value)(v)
+	case *Complex128Type:
+		return (*Complex128Value)(v)
 	case *IntType:
 		return (*IntValue)(v)
 	case *Int8Type:
@@ -1283,7 +1376,7 @@ func newValue(typ Type, addr addr, canSet bool) Value {
 	case *UnsafePointerType:
 		return (*UnsafePointerValue)(v)
 	}
-	panicln("newValue", typ.String())
+	panic("newValue" + typ.String())
 }
 
 // MakeZero returns a zero Value for the specified Type.

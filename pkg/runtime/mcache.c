@@ -10,7 +10,7 @@
 #include "malloc.h"
 
 void*
-MCache_Alloc(MCache *c, int32 sizeclass, uintptr size)
+MCache_Alloc(MCache *c, int32 sizeclass, uintptr size, int32 zeroed)
 {
 	MCacheList *l;
 	MLink *first, *v;
@@ -36,6 +36,17 @@ MCache_Alloc(MCache *c, int32 sizeclass, uintptr size)
 	// v is zeroed except for the link pointer
 	// that we used above; zero that.
 	v->next = nil;
+	if(zeroed) {
+		// block is zeroed iff second word is zero ...
+		if(size > sizeof(uintptr) && ((uintptr*)v)[1] != 0)
+			runtime_memclr((byte*)v, size);
+		else {
+			// ... except for the link pointer
+			// that we used above; zero that.
+			v->next = nil;
+		}
+	}
+	c->local_alloc += size;
 	return v;
 }
 
@@ -76,6 +87,7 @@ MCache_Free(MCache *c, void *v, int32 sizeclass, uintptr size)
 	l->list = p;
 	l->nlist++;
 	c->size += size;
+	c->local_alloc -= size;
 
 	if(l->nlist >= MaxMCacheListLen) {
 		// Release a chunk back.
@@ -103,3 +115,20 @@ MCache_Free(MCache *c, void *v, int32 sizeclass, uintptr size)
 	}
 }
 
+void
+MCache_ReleaseAll(MCache *c)
+{
+	int32 i;
+	MCacheList *l;
+
+	lock(&mheap);
+	mstats.heap_alloc += c->local_alloc;
+	c->local_alloc = 0;
+	unlock(&mheap);
+
+	for(i=0; i<NumSizeClasses; i++) {
+		l = &c->list[i];
+		ReleaseN(c, l, l->nlist, i);
+		l->nlistmin = 0;
+	}
+}

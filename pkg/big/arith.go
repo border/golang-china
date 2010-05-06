@@ -211,16 +211,29 @@ func divStep(x1, x0, y Word) (q, r Word) {
 }
 
 
-// Number of leading zeros in x.
-func leadingZeros(x Word) (n uint) {
-	if x == 0 {
-		return _W
+// Length of x in bits.
+func bitLen(x Word) (n int) {
+	for ; x >= 0x100; x >>= 8 {
+		n += 8
 	}
-	for x&(1<<(_W-1)) == 0 {
+	for ; x > 0; x >>= 1 {
 		n++
-		x <<= 1
 	}
 	return
+}
+
+
+// log2 computes the integer binary logarithm of x.
+// The result is the integer n for which 2^n <= x < 2^(n+1).
+// If x == 0, the result is -1.
+func log2(x Word) int {
+	return bitLen(x) - 1
+}
+
+
+// Number of leading zeros in x.
+func leadingZeros(x Word) uint {
+	return uint(_W - bitLen(x))
 }
 
 
@@ -267,58 +280,12 @@ func divWW_g(x1, x0, y Word) (q, r Word) {
 }
 
 
-// ----------------------------------------------------------------------------
-// Elementary operations on vectors
-
-// All higher-level functions use these elementary vector operations.
-// The function pointers f are initialized with default implementations
-// f_g, written in Go for portability. The corresponding assembly routines
-// f_s should be installed if they exist.
-var (
-	// addVV sets z and returns c such that z+c = x+y.
-	addVV func(z, x, y *Word, n int) (c Word) = addVV_g
-
-	// subVV sets z and returns c such that z-c = x-y.
-	subVV func(z, x, y *Word, n int) (c Word) = subVV_g
-
-	// addVW sets z and returns c such that z+c = x-y.
-	addVW func(z, x *Word, y Word, n int) (c Word) = addVW_g
-
-	// subVW sets z and returns c such that z-c = x-y.
-	subVW func(z, x *Word, y Word, n int) (c Word) = subVW_g
-
-	// mulAddVWW sets z and returns c such that z+c = x*y + r.
-	mulAddVWW func(z, x *Word, y, r Word, n int) (c Word) = mulAddVWW_g
-
-	// addMulVVW sets z and returns c such that z+c = z + x*y.
-	addMulVVW func(z, x *Word, y Word, n int) (c Word) = addMulVVW_g
-
-	// divWVW sets z and returns r such that z-r = (xn<<(n*_W) + x) / y.
-	divWVW func(z *Word, xn Word, x *Word, y Word, n int) (r Word) = divWVW_g
-)
-
-
-func init() {
-	// Uncomment to use generic routines.
-	//return;
-
-	// Install assembly routines.
-	addVV = addVV_s
-	subVV = subVV_s
-	addVW = addVW_s
-	subVW = subVW_s
-	mulAddVWW = mulAddVWW_s
-	addMulVVW = addMulVVW_s
-	divWVW = divWVW_s
-}
-
-
 func (p *Word) at(i int) *Word {
 	return (*Word)(unsafe.Pointer(uintptr(unsafe.Pointer(p)) + uintptr(i)*_S))
 }
 
 
-func addVV_s(z, x, y *Word, n int) (c Word)
+func addVV(z, x, y *Word, n int) (c Word)
 func addVV_g(z, x, y *Word, n int) (c Word) {
 	for i := 0; i < n; i++ {
 		c, *z.at(i) = addWW_g(*x.at(i), *y.at(i), c)
@@ -327,7 +294,7 @@ func addVV_g(z, x, y *Word, n int) (c Word) {
 }
 
 
-func subVV_s(z, x, y *Word, n int) (c Word)
+func subVV(z, x, y *Word, n int) (c Word)
 func subVV_g(z, x, y *Word, n int) (c Word) {
 	for i := 0; i < n; i++ {
 		c, *z.at(i) = subWW_g(*x.at(i), *y.at(i), c)
@@ -336,7 +303,7 @@ func subVV_g(z, x, y *Word, n int) (c Word) {
 }
 
 
-func addVW_s(z, x *Word, y Word, n int) (c Word)
+func addVW(z, x *Word, y Word, n int) (c Word)
 func addVW_g(z, x *Word, y Word, n int) (c Word) {
 	c = y
 	for i := 0; i < n; i++ {
@@ -346,7 +313,7 @@ func addVW_g(z, x *Word, y Word, n int) (c Word) {
 }
 
 
-func subVW_s(z, x *Word, y Word, n int) (c Word)
+func subVW(z, x *Word, y Word, n int) (c Word)
 func subVW_g(z, x *Word, y Word, n int) (c Word) {
 	c = y
 	for i := 0; i < n; i++ {
@@ -356,7 +323,29 @@ func subVW_g(z, x *Word, y Word, n int) (c Word) {
 }
 
 
-func mulAddVWW_s(z, x *Word, y, r Word, n int) (c Word)
+func shlVW(z, x *Word, s Word, n int) (c Word)
+func shlVW_g(z, x *Word, s Word, n int) (c Word) {
+	ŝ := _W - s
+	for i := 0; i < n; i++ {
+		w := *x.at(i)
+		c, *z.at(i) = w>>ŝ, w<<s|c
+	}
+	return
+}
+
+
+func shrVW(z, x *Word, s Word, n int) (c Word)
+func shrVW_g(z, x *Word, s Word, n int) (c Word) {
+	ŝ := _W - s
+	for i := n - 1; i >= 0; i-- {
+		w := *x.at(i)
+		c, *z.at(i) = w<<ŝ, w>>s|c
+	}
+	return
+}
+
+
+func mulAddVWW(z, x *Word, y, r Word, n int) (c Word)
 func mulAddVWW_g(z, x *Word, y, r Word, n int) (c Word) {
 	c = r
 	for i := 0; i < n; i++ {
@@ -366,7 +355,7 @@ func mulAddVWW_g(z, x *Word, y, r Word, n int) (c Word) {
 }
 
 
-func addMulVVW_s(z, x *Word, y Word, n int) (c Word)
+func addMulVVW(z, x *Word, y Word, n int) (c Word)
 func addMulVVW_g(z, x *Word, y Word, n int) (c Word) {
 	for i := 0; i < n; i++ {
 		z1, z0 := mulAddWWW_g(*x.at(i), y, *z.at(i))
@@ -377,7 +366,7 @@ func addMulVVW_g(z, x *Word, y Word, n int) (c Word) {
 }
 
 
-func divWVW_s(z *Word, xn Word, x *Word, y Word, n int) (r Word)
+func divWVW(z *Word, xn Word, x *Word, y Word, n int) (r Word)
 func divWVW_g(z *Word, xn Word, x *Word, y Word, n int) (r Word) {
 	r = xn
 	for i := n - 1; i >= 0; i-- {

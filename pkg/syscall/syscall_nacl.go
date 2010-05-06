@@ -108,6 +108,10 @@ func Sleep(ns int64) (errno int) {
 //	SYS_TLS_*
 //	SYS_SCHED_YIELD
 
+// #define'd in NaCl but not picked up by mkerrors_nacl.sh.
+
+const EWOULDBLOCK = EAGAIN
+
 // Not implemented in NaCl but needed to compile other packages.
 
 const (
@@ -131,7 +135,7 @@ func Pwrite(fd int, p []byte, offset int64) (n int, errno int) {
 func Mkdir(path string, mode int) (errno int) { return ENACL }
 
 func Lstat(path string, stat *Stat_t) (errno int) {
-	return ENACL
+	return Stat(path, stat)
 }
 
 func Chdir(path string) (errno int) { return ENACL }

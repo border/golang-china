@@ -15,16 +15,9 @@
 #include "runtime.h"
 #include "defs.h"
 #include "os.h"
+#include "arch.h"
 
-// TODO(rsc): Move this *under* the text segment.
-// Then define names for these addresses instead of hard-coding magic ones.
-#ifdef _64BIT
-#define SYMCOUNTS ((int32*)(0x99LL<<32))	// known to 6l
-#define SYMDATA ((byte*)(0x99LL<<32) + 8)
-#else
-#define SYMCOUNTS ((int32*)(0x99LL<<24))	// known to 8l
-#define SYMDATA ((byte*)(0x99LL<<24) + 8)
-#endif
+extern int32 symdat[];
 
 typedef struct Sym Sym;
 struct Sym
@@ -43,18 +36,15 @@ walksymtab(void (*fn)(Sym*))
 	byte *p, *ep, *q;
 	Sym s;
 
-	// TODO(rsc): Remove once TODO at top of file is done.
-	if(goos != nil && strcmp((uint8*)goos, (uint8*)"nacl") == 0)
-		return;
-	if(goos != nil && strcmp((uint8*)goos, (uint8*)"pchw") == 0)
+	if(symdat == nil)
 		return;
 
-#ifdef __MINGW__
+#ifdef __WINDOWS__
 	v = get_symdat_addr();
 	p = (byte*)v+8;
 #else
-	v = SYMCOUNTS;
-	p = SYMDATA;
+	v = symdat;
+	p = (byte*)(symdat+2);
 #endif
 	ep = p + v[0];
 	while(p < ep) {
@@ -107,6 +97,8 @@ dofunc(Sym *sym)
 	switch(sym->symtype) {
 	case 't':
 	case 'T':
+	case 'l':
+	case 'L':
 		if(strcmp(sym->name, (byte*)"etext") == 0)
 			break;
 		if(func == nil) {
@@ -116,10 +108,12 @@ dofunc(Sym *sym)
 		f = &func[nfunc++];
 		f->name = gostring(sym->name);
 		f->entry = sym->value;
+		if(sym->symtype == 'L' || sym->symtype == 'l')
+			f->frame = -sizeof(uintptr);
 		break;
 	case 'm':
 		if(nfunc > 0 && func != nil)
-			func[nfunc-1].frame = sym->value;
+			func[nfunc-1].frame += sym->value;
 		break;
 	case 'p':
 		if(nfunc > 0 && func != nil) {
@@ -238,8 +232,6 @@ dosrcline(Sym *sym)
 	}
 }
 
-enum { PcQuant = 1 };
-
 // Interpret pc/ln table, saving the subpiece for each func.
 static void
 splitpcln(void)
@@ -249,20 +241,27 @@ splitpcln(void)
 	byte *p, *ep;
 	Func *f, *ef;
 	int32 *v;
+	int32 pcquant;
 
-	// TODO(rsc): Remove once TODO at top of file is done.
-	if(goos != nil && strcmp((uint8*)goos, (uint8*)"nacl") == 0)
-		return;
-	if(goos != nil && strcmp((uint8*)goos, (uint8*)"pchw") == 0)
+	switch(thechar) {
+	case '5':
+		pcquant = 4;
+		break;
+	default:	// 6, 8
+		pcquant = 1;
+		break;
+	}
+
+	if(symdat == nil)
 		return;
 
 	// pc/ln table bounds
-#ifdef __MINGW__
+#ifdef __WINDOWS__
 	v = get_symdat_addr();
 	p = (byte*)v+8;
 #else
-	v = SYMCOUNTS;
-	p = SYMDATA;
+	v = symdat;
+	p = (byte*)(symdat+2);
 #endif
 	p += v[0];
 	ep = p+v[1];
@@ -271,7 +270,7 @@ splitpcln(void)
 	ef = func + nfunc;
 	pc = func[0].entry;	// text base
 	f->pcln.array = p;
-	f->pc0 = pc - PcQuant;
+	f->pc0 = pc - pcquant;
 	line = 0;
 	for(; p < ep; p++) {
 		if(f < ef && pc > (f+1)->entry) {
@@ -291,9 +290,9 @@ splitpcln(void)
 		} else if(*p <= 128) {
 			line -= *p - 64;
 		} else {
-			pc += PcQuant*(*p - 129);
+			pc += pcquant*(*p - 129);
 		}
-		pc += PcQuant;
+		pc += pcquant;
 	}
 	if(f < ef) {
 		f->pcln.len = p - f->pcln.array;
@@ -304,12 +303,23 @@ splitpcln(void)
 
 // Return actual file line number for targetpc in func f.
 // (Source file is f->src.)
+// NOTE(rsc): If you edit this function, also edit extern.go:/FileLine
 int32
 funcline(Func *f, uint64 targetpc)
 {
 	byte *p, *ep;
 	uintptr pc;
 	int32 line;
+	int32 pcquant;
+	
+	switch(thechar) {
+	case '5':
+		pcquant = 4;
+		break;
+	default:	// 6, 8
+		pcquant = 1;
+		break;
+	}
 
 	p = f->pcln.array;
 	ep = p + f->pcln.len;
@@ -324,9 +334,9 @@ funcline(Func *f, uint64 targetpc)
 		} else if(*p <= 128) {
 			line -= *p - 64;
 		} else {
-			pc += PcQuant*(*p - 129);
+			pc += pcquant*(*p - 129);
 		}
-		pc += PcQuant;
+		pc += pcquant;
 	}
 	return line;
 }
@@ -338,6 +348,12 @@ buildfuncs(void)
 
 	if(func != nil)
 		return;
+
+	// Memory profiling uses this code;
+	// can deadlock if the profiler ends
+	// up back here.
+	m->nomemprof++;
+
 	// count funcs, fnames
 	nfunc = 0;
 	nfname = 0;
@@ -355,6 +371,8 @@ buildfuncs(void)
 
 	// record src file and line info for each func
 	walksymtab(dosrcline);
+
+	m->nomemprof--;
 }
 
 Func*

@@ -5,6 +5,20 @@ package syscall
 
 import "unsafe"
 
+func open(path string, mode int, perm int) (fd int, errno int) {
+	r0, _, e1 := Syscall(SYS_OPEN, uintptr(unsafe.Pointer(StringBytePtr(path))), uintptr(mode), uintptr(perm))
+	fd = int(r0)
+	errno = int(e1)
+	return
+}
+
+func openat(dirfd int, path string, flags int, mode int) (fd int, errno int) {
+	r0, _, e1 := Syscall6(SYS_OPENAT, uintptr(dirfd), uintptr(unsafe.Pointer(StringBytePtr(path))), uintptr(flags), uintptr(mode), 0, 0)
+	fd = int(r0)
+	errno = int(e1)
+	return
+}
+
 func pipe(p *[2]_C_int) (errno int) {
 	_, _, e1 := Syscall(SYS_PIPE, uintptr(unsafe.Pointer(p)), 0, 0)
 	errno = int(e1)
@@ -314,20 +328,6 @@ func Nanosleep(time *Timespec, leftover *Timespec) (errno int) {
 	return
 }
 
-func Open(path string, mode int, perm int) (fd int, errno int) {
-	r0, _, e1 := Syscall(SYS_OPEN, uintptr(unsafe.Pointer(StringBytePtr(path))), uintptr(mode), uintptr(perm))
-	fd = int(r0)
-	errno = int(e1)
-	return
-}
-
-func Openat(dirfd int, path string, flags int, mode int) (fd int, errno int) {
-	r0, _, e1 := Syscall6(SYS_OPENAT, uintptr(dirfd), uintptr(unsafe.Pointer(StringBytePtr(path))), uintptr(flags), uintptr(mode), 0, 0)
-	fd = int(r0)
-	errno = int(e1)
-	return
-}
-
 func Pause() (errno int) {
 	_, _, e1 := Syscall(SYS_PAUSE, 0, 0, 0)
 	errno = int(e1)
@@ -434,9 +434,10 @@ func Setrlimit(resource int, rlim *Rlimit) (errno int) {
 	return
 }
 
-func Setsid() (pid int) {
-	r0, _, _ := Syscall(SYS_SETSID, 0, 0, 0)
+func Setsid() (pid int, errno int) {
+	r0, _, e1 := Syscall(SYS_SETSID, 0, 0, 0)
 	pid = int(r0)
+	errno = int(e1)
 	return
 }
 

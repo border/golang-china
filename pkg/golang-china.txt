@@ -12,3 +12,10 @@ branch: default
 commit: 3 modified, 8 unknown
 update: (current)
 
+2. 更新版本信息 2010.5.4
+parent: 5446:5593b2a833b2 tip
+ gob: add support for maps.
+branch: default
+commit: (clean)
+update: (current)
+

@@ -16,7 +16,11 @@
 
 #define SYS_exit (SYS_BASE + 1)
 #define SYS_write (SYS_BASE + 4)
+#define SYS_gettimeofday (SYS_BASE + 78)
 #define SYS_clone (SYS_BASE + 120)
+#define SYS_rt_sigreturn (SYS_BASE + 173)
+#define SYS_rt_sigaction (SYS_BASE + 174)
+#define SYS_sigaltstack (SYS_BASE + 186)
 #define SYS_mmap2 (SYS_BASE + 192)
 #define SYS_gettid (SYS_BASE + 224)
 #define SYS_futex (SYS_BASE + 240)
@@ -58,6 +62,33 @@ TEXT ·mmap(SB),7,$0
 	MOVW	20(FP), R5
 	MOVW	$SYS_mmap2, R7
 	SWI	$0
+	RET
+
+TEXT gettime(SB),7,$32
+	/* dummy version - return 0,0 */
+	MOVW	$0, R1
+	MOVW	0(FP), R0
+	MOVW	R1, 0(R0)
+	MOVW	R1, 4(R0)
+	MOVW	4(FP), R0
+	MOVW	R1, 0(R0)
+
+/*
+	attempt at real version - seg faults
+
+	MOVW	$8(SP), R0
+	MOVW	$0, R1
+	MOVW	$SYS_gettimeofday, R7
+	SWI	$0
+
+	MOVW	0(FP), R0	// sec
+	MOVW	8(SP), R1
+	MOVW	R1, 0(R0)
+
+	MOVW	4(FP), R0	// usec
+	MOVW	12(SP), R1
+	MOVW	R1, 0(R0)
+*/
 	RET
 
 // int32 futex(int32 *uaddr, int32 op, int32 val,
@@ -147,3 +178,39 @@ TEXT cacheflush(SB),7,$0
 	SWI	$0
 	RET
 
+TEXT sigaltstack(SB),7,$0
+	MOVW	0(FP), R0
+	MOVW	4(FP), R1
+	MOVW	$SYS_sigaltstack, R7
+	SWI	$0
+	RET
+
+TEXT sigignore(SB),7,$0
+	RET
+
+TEXT sigreturn(SB),7,$0
+	MOVW	R0, R0
+	B	abort(SB)
+	RET
+
+TEXT sigtramp(SB),7,$24
+	MOVW	m_gsignal(m), g
+	MOVW	R0, 4(R13)
+	MOVW	R1, 8(R13)
+	MOVW	R2, 12(R13)
+	BL	sighandler(SB)
+	RET
+
+TEXT rt_sigaction(SB),7,$0
+	MOVW	0(FP), R0
+	MOVW	4(FP), R1
+	MOVW	8(FP), R2
+	MOVW	12(FP), R3
+	MOVW	$SYS_rt_sigaction, R7
+	SWI	$0
+	RET
+
+TEXT sigreturn(SB),7,$0
+	MOVW	$SYS_rt_sigreturn, R7
+	SWI	$0
+	RET

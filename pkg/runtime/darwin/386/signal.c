@@ -39,6 +39,47 @@ sighandler(int32 sig, Siginfo *info, void *context)
 	Ucontext *uc;
 	Mcontext *mc;
 	Regs *r;
+	uintptr *sp;
+	void (*fn)(void);
+	G *gp;
+	byte *pc;
+
+	uc = context;
+	mc = uc->uc_mcontext;
+	r = &mc->ss;
+
+	if((gp = m->curg) != nil && (sigtab[sig].flags & SigPanic)) {
+		// Work around Leopard bug that doesn't set FPE_INTDIV.
+		// Look at instruction to see if it is a divide.
+		// Not necessary in Snow Leopard (si_code will be != 0).
+		if(sig == SIGFPE && info->si_code == 0) {
+			pc = (byte*)r->eip;
+			if(pc[0] == 0xF7)
+				info->si_code = FPE_INTDIV;
+		}
+		
+		// Make it look like a call to the signal func.
+		// Have to pass arguments out of band since
+		// augmenting the stack frame would break
+		// the unwinding code.
+		gp->sig = sig;
+		gp->sigcode0 = info->si_code;
+		gp->sigcode1 = (uintptr)info->si_addr;
+
+		// Only push sigpanic if r->eip != 0.
+		// If r->eip == 0, probably panicked because of a
+		// call to a nil func.  Not pushing that onto sp will
+		// make the trace look like a call to sigpanic instead.
+		// (Otherwise the trace will end at sigpanic and we
+		// won't get to see who faulted.)
+		if(r->eip != 0) {
+			sp = (uintptr*)r->esp;
+			*--sp = r->eip;
+			r->esp = (uintptr)sp;
+		}
+		r->eip = (uintptr)sigpanic;
+		return;
+	}
 
 	if(sigtab[sig].flags & SigQueue) {
 		if(sigsend(sig) || (sigtab[sig].flags & SigIgnore))
@@ -56,16 +97,11 @@ sighandler(int32 sig, Siginfo *info, void *context)
 		printf("%s\n", sigtab[sig].name);
 	}
 
-	uc = context;
-	mc = uc->uc_mcontext;
-	r = &mc->ss;
-
-	printf("Faulting address: %p\n", info->si_addr);
 	printf("pc: %x\n", r->eip);
 	printf("\n");
 
 	if(gotraceback()){
-		traceback((void*)r->eip, (void*)r->esp, m->curg);
+		traceback((void*)r->eip, (void*)r->esp, 0, m->curg);
 		tracebackothers(m->curg);
 		dumpregs(r);
 	}

@@ -6,9 +6,10 @@ include ../../Make.$(GOARCH)
 
 TARG=syscall
 GOFILES=\
-	errstr.go\
+	str.go\
 	exec.go\
 	syscall.go\
+	syscall_$(GOARCH).go\
 	syscall_$(GOOS).go\
 	syscall_$(GOOS)_$(GOARCH).go\
 	zerrors_$(GOOS)_$(GOARCH).go\
@@ -16,7 +17,23 @@ GOFILES=\
 	zsysnum_$(GOOS)_$(GOARCH).go\
 	ztypes_$(GOOS)_$(GOARCH).go\
 
+GOFILES_freebsd=\
+	syscall_bsd.go\
+	syscall_unix.go\
+
+GOFILES_darwin=\
+	syscall_bsd.go\
+	syscall_unix.go\
+
+GOFILES_linux=\
+	syscall_unix.go\
+
+GOFILES_nacl=\
+	syscall_unix.go\
+
 OFILES=\
 	asm_$(GOOS)_$(GOARCH).$O\
+
+GOFILES+=$(GOFILES_$(GOOS))
 
 include ../../Make.pkg

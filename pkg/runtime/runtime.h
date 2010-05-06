@@ -59,11 +59,14 @@ typedef	struct	SigTab		SigTab;
 typedef	struct	MCache		MCache;
 typedef	struct	Iface		Iface;
 typedef	struct	Itab		Itab;
-typedef	struct	Eface	Eface;
+typedef	struct	Eface		Eface;
 typedef	struct	Type		Type;
 typedef	struct	Defer		Defer;
+typedef	struct	Panic		Panic;
 typedef	struct	hash		Hmap;
 typedef	struct	Hchan		Hchan;
+typedef	struct	Complex64	Complex64;
+typedef	struct	Complex128	Complex128;
 
 /*
  * per-cpu declaration.
@@ -74,7 +77,7 @@ typedef	struct	Hchan		Hchan;
  *
  * amd64: allocated downwards from R15
  * x86: allocated upwards from 0(FS)
- * arm: allocated upwards from R9
+ * arm: allocated downwards from R10
  *
  * every C file linked into a Go program must include runtime.h
  * so that the C compiler knows to avoid other uses of these registers.
@@ -89,6 +92,10 @@ extern	register	M*	m;
 enum
 {
 	// G status
+	//
+	// If you add to this list, add to the list
+	// of "okay during garbage collection" status
+	// in mgc0.c too.
 	Gidle,
 	Grunnable,
 	Grunning,
@@ -96,6 +103,7 @@ enum
 	Gwaiting,
 	Gmoribund,
 	Gdead,
+	Grecovery,
 };
 enum
 {
@@ -109,7 +117,7 @@ enum
 struct	Lock
 {
 	uint32	key;
-#ifdef __MINGW__
+#ifdef __WINDOWS__
 	void*	event;
 #else
 	uint32	sema;	// for OS X
@@ -145,6 +153,16 @@ struct Eface
 	Type*	type;
 	void*	data;
 };
+struct Complex64
+{
+	float32	real;
+	float32	imag;
+};
+struct Complex128
+{
+	float64	real;
+	float64	imag;
+};
 
 struct	Slice
 {				// must not move anything
@@ -164,7 +182,8 @@ struct	G
 	byte*	stackguard;	// cannot move - also known to linker, libmach, libcgo
 	byte*	stackbase;	// cannot move - also known to libmach, libcgo
 	Defer*	defer;
-	Gobuf	sched;		// cannot move - also known to libmach
+	Panic*	panic;
+	Gobuf	sched;
 	byte*	stack0;
 	byte*	entry;		// initial function
 	G*	alllink;	// on allg
@@ -174,10 +193,12 @@ struct	G
 	uint32	selgen;		// valid sudog pointer
 	G*	schedlink;
 	bool	readyonstop;
+	bool	ispanic;
 	M*	m;		// for debuggers, but offset not hard-coded
 	M*	lockedm;
-	void	(*cgofn)(void*);	// for cgo/ffi
-	void	*cgoarg;
+	int32	sig;
+	uintptr	sigcode0;
+	uintptr	sigcode1;
 };
 struct	M
 {
@@ -200,6 +221,7 @@ struct	M
 	int32	mallocing;
 	int32	gcing;
 	int32	locks;
+	int32	nomemprof;
 	int32	waitnextg;
 	Note	havenextg;
 	G*	nextg;
@@ -208,7 +230,8 @@ struct	M
 	uint32	machport;	// Return address for Mach IPC (OS X)
 	MCache	*mcache;
 	G*	lockedg;
-#ifdef __MINGW__
+	uint64 freg[8];	// Floating point register storage used by ARM software fp routines
+#ifdef __WINDOWS__
 	void*	return_address;	// saved return address and stack
 	void*	stack_pointer;	// pointer for Windows stdcall
 	void*	os_stack_pointer;
@@ -226,6 +249,8 @@ struct	Stktop
 	// fp == gobuf.sp except in the case of a reflected
 	// function call, which uses an off-stack argument frame.
 	uint8*	fp;
+	bool	free;	// call stackfree for this frame?
+	bool	panic;	// is this frame the top of a panic?
 };
 struct	Alg
 {
@@ -245,22 +270,21 @@ enum
 	SigIgnore = 1<<1,
 	SigRestart = 1<<2,
 	SigQueue = 1<<3,
+	SigPanic = 1<<4,
 };
 
-// (will be) shared with go; edit ../cmd/6g/sys.go too.
-// should move out of sys.go eventually.
-// also eventually, the loaded symbol table should
-// be closer to this form.
+// NOTE(rsc): keep in sync with extern.go:/type.Func.
+// Eventually, the loaded symbol table should be closer to this form.
 struct	Func
 {
 	String	name;
 	String	type;	// go type string
 	String	src;	// src file name
-	uint64	entry;	// entry pc
-	int64	frame;	// stack frame size
 	Slice	pcln;	// pc/ln tab for this func
-	int64	pc0;	// starting pc, ln for table
+	uintptr	entry;	// entry pc
+	uintptr	pc0;	// starting pc, ln for table
 	int32	ln0;
+	int32	frame;	// stack frame size
 	int32	args;	// number of 32-bit in/out args
 	int32	locals;	// number of 32-bit locals
 };
@@ -283,7 +307,6 @@ enum
 	ASTRING,
 	AINTER,
 	ANILINTER,
-	AFAKE,
 	Amax
 };
 
@@ -299,9 +322,21 @@ struct Defer
 {
 	int32	siz;
 	byte*	sp;
+	byte*	pc;
 	byte*	fn;
 	Defer*	link;
 	byte	args[8];	// padded to actual size
+};
+
+/*
+ * panics
+ */
+struct Panic
+{
+	Eface	arg;		// argument to panic
+	byte*	stackbase;	// g->stackbase in panic
+	Panic*	link;		// link to earlier panic
+	bool	recovered;	// whether this panic is over
 };
 
 /*
@@ -340,6 +375,7 @@ void	goargs(void);
 void	FLUSH(void*);
 void*	getu(void);
 void	throw(int8*);
+void	panicstring(int8*);
 uint32	rnd(uint32, uint32);
 void	prints(int8*);
 void	printf(int8*, ...);
@@ -347,13 +383,14 @@ byte*	mchr(byte*, byte, byte*);
 void	mcpy(byte*, byte*, uint32);
 int32	mcmp(byte*, byte*, uint32);
 void	memmove(void*, void*, uint32);
-void*	mal(uint32);
+void*	mal(uintptr);
 uint32	cmpstring(String, String);
+String	catstring(String, String);
 String	gostring(byte*);
 String	gostringw(uint16*);
 void	initsig(void);
 int32	gotraceback(void);
-void	traceback(uint8 *pc, uint8 *sp, G* gp);
+void	traceback(uint8 *pc, uint8 *sp, uint8 *lr, G* gp);
 void	tracebackothers(G*);
 int32	open(byte*, int32, ...);
 int32	write(int32, void*, int32);
@@ -383,15 +420,28 @@ uintptr	nohash(uint32, void*);
 uint32	noequal(uint32, void*, void*);
 void*	malloc(uintptr size);
 void	free(void *v);
+void	addfinalizer(void*, void(*fn)(void*), int32);
+void	walkfintab(void (*fn)(void*));
+void	runpanic(Panic*);
+void*	getcallersp(void*);
+
 void	exit(int32);
 void	breakpoint(void);
 void	gosched(void);
 void	goexit(void);
 void	runcgo(void (*fn)(void*), void*);
+void	runcgocallback(G*, void*, void (*fn)());
 void	·entersyscall(void);
 void	·exitsyscall(void);
+void	startcgocallback(G*);
+void	endcgocallback(G*);
+G*	newproc1(byte*, byte*, int32, int32);
 void	siginit(void);
 bool	sigsend(int32 sig);
+void	gettime(int64*, int32*);
+int32	callers(int32, uintptr*, int32);
+int64	nanotime(void);
+void	panic(int32);
 
 #pragma	varargck	argpos	printf	1
 
@@ -422,6 +472,7 @@ void	starttheworld(void);
  */
 void	lock(Lock*);
 void	unlock(Lock*);
+void	destroylock(Lock*);
 
 /*
  * sleep and wakeup on one-time events.
@@ -455,6 +506,7 @@ void	notewakeup(Note*);
 #define runtime_printpointer ·printpointer
 #define runtime_printstring ·printstring
 #define runtime_printuint ·printuint
+#define runtime_printcomplex ·printcomplex
 #define runtime_setcallerpc ·setcallerpc
 #endif
 
@@ -468,7 +520,7 @@ void	notewakeup(Note*);
 /*
  * low level go-called
  */
-uint8*	runtime_mmap(byte*, uint32, int32, int32, int32, uint32);
+uint8*	runtime_mmap(byte*, uintptr, int32, int32, int32, uint32);
 void	runtime_memclr(byte*, uint32);
 void	runtime_setcallerpc(void*, void*);
 void*	runtime_getcallerpc(void*);
@@ -487,7 +539,18 @@ void	runtime_printpointer(void*);
 void	runtime_printuint(uint64);
 void	runtime_printhex(uint64);
 void	runtime_printslice(Slice);
-void	·panicl(int32);
+void	runtime_printcomplex(Complex128);
+void	reflect·call(byte*, byte*, uint32);
+void	·panic(Eface);
+void	·panicindex(void);
+void	·panicslice(void);
+/*
+ * runtime c-called (but written in Go)
+ */
+void ·newError(String, Eface*);
+void	·printany(Eface);
+void	·newTypeAssertionError(Type*, Type*, Type*, String*, String*, String*, String*, Eface*);
+void	·newErrorString(String, Eface*);
 
 /*
  * wrapped for go users
@@ -514,9 +577,9 @@ struct hash_iter*	mapiterinit(Hmap*);
 void	mapiternext(struct hash_iter*);
 bool	mapiterkey(struct hash_iter*, void*);
 void	mapiterkeyvalue(struct hash_iter*, void*, void*);
-Hmap*	makemap(Type*, Type*, uint32);
+Hmap*	makemap(Type*, Type*, int64);
 
-Hchan*	makechan(Type*, uint32);
+Hchan*	makechan(Type*, int64);
 void	chansend(Hchan*, void*, bool*);
 void	chanrecv(Hchan*, void*, bool*);
 void	chanclose(Hchan*);

@@ -298,7 +298,7 @@ func TestScalarEncInstructions(t *testing.T) {
 	// bytes == []uint8
 	{
 		b.Reset()
-		data := struct{ a []byte }{strings.Bytes("hello")}
+		data := struct{ a []byte }{[]byte("hello")}
 		instr := &encInstr{encUint8Array, 6, 0, 0}
 		state := newencoderState(b)
 		instr.op(instr, state, unsafe.Pointer(&data))
@@ -572,6 +572,7 @@ func TestEndToEnd(t *testing.T) {
 	s2 := "string2"
 	type T1 struct {
 		a, b, c int
+		m       map[string]*float
 		n       *[3]float
 		strs    *[2]string
 		int64s  *[]int64
@@ -579,16 +580,19 @@ func TestEndToEnd(t *testing.T) {
 		y       []byte
 		t       *T2
 	}
+	pi := 3.14159
+	e := 2.71828
 	t1 := &T1{
-		a: 17,
-		b: 18,
-		c: -5,
-		n: &[3]float{1.5, 2.5, 3.5},
-		strs: &[2]string{s1, s2},
+		a:      17,
+		b:      18,
+		c:      -5,
+		m:      map[string]*float{"pi": &pi, "e": &e},
+		n:      &[3]float{1.5, 2.5, 3.5},
+		strs:   &[2]string{s1, s2},
 		int64s: &[]int64{77, 89, 123412342134},
-		s: "Now is the time",
-		y: strings.Bytes("hello, sailor"),
-		t: &T2{"this is T2"},
+		s:      "Now is the time",
+		y:      []byte("hello, sailor"),
+		t:      &T2{"this is T2"},
 	}
 	b := new(bytes.Buffer)
 	err := NewEncoder(b).Encode(t1)
@@ -921,6 +925,7 @@ type IT0 struct {
 	ignore_g string
 	ignore_h []byte
 	ignore_i *RT1
+	ignore_m map[string]int
 	c        float
 }
 
@@ -935,8 +940,9 @@ func TestIgnoredFields(t *testing.T) {
 	it0.ignore_e[2] = 3.0
 	it0.ignore_f = true
 	it0.ignore_g = "pay no attention"
-	it0.ignore_h = strings.Bytes("to the curtain")
+	it0.ignore_h = []byte("to the curtain")
 	it0.ignore_i = &RT1{3.1, "hi", 7, "hello"}
+	it0.ignore_m = map[string]int{"one": 1, "two": 2}
 
 	b := new(bytes.Buffer)
 	NewEncoder(b).Encode(it0)

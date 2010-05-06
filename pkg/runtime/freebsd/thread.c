@@ -3,8 +3,10 @@
 
 #include "runtime.h"
 #include "defs.h"
-#include "signals.h"
 #include "os.h"
+
+extern SigTab sigtab[];
+extern int32 sys_umtx_op(uint32*, int32, uint32, void*, void*);
 
 // FreeBSD's umtx_op syscall is effectively the same as Linux's futex, and
 // thus the code is largely similar. See linux/thread.c for comments.
@@ -99,6 +101,11 @@ unlock(Lock *l)
 	umtx_unlock(l);
 }
 
+void
+destroylock(Lock*)
+{
+}
+
 // Event notifications.
 void
 noteclear(Note *n)
@@ -163,4 +170,28 @@ minit(void)
 	// Initialize signal handling
 	m->gsignal = malg(32*1024);
 	signalstack(m->gsignal->stackguard, 32*1024);
+}
+
+void
+sigpanic(void)
+{
+	switch(g->sig) {
+	case SIGBUS:
+		if(g->sigcode0 == BUS_ADRERR && g->sigcode1 < 0x1000)
+			panicstring("invalid memory address or nil pointer dereference");
+		break;
+	case SIGSEGV:
+		if((g->sigcode0 == 0 || g->sigcode0 == SEGV_MAPERR) && g->sigcode1 < 0x1000)
+			panicstring("invalid memory address or nil pointer dereference");
+		break;
+	case SIGFPE:
+		switch(g->sigcode0) {
+		case FPE_INTDIV:
+			panicstring("integer divide by zero");
+		case FPE_INTOVF:
+			panicstring("integer overflow");
+		}
+		panicstring("floating point error");
+	}
+	panicstring(sigtab[g->sig].name);
 }

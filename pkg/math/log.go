@@ -27,7 +27,7 @@ package math
 //
 // Method :
 //   1. Argument Reduction: find k and f such that
-//			x = 2^k * (1+f),
+//			x = 2**k * (1+f),
 //	   where  sqrt(2)/2 < 1+f < sqrt(2) .
 //
 //   2. Approximation of log(1+f).
@@ -125,3 +125,7 @@ func Log(x float64) float64 {
 // Log10 returns the decimal logarithm of x.
 // The special cases are the same as for Log.
 func Log10(x float64) float64 { return Log(x) * (1 / Ln10) }
+
+// Log2 returns the binary logarithm of x.
+// The special cases are the same as for Log.
+func Log2(x float64) float64 { return Log(x) * (1 / Ln2) }

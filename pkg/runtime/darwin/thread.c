@@ -6,6 +6,8 @@
 #include "defs.h"
 #include "os.h"
 
+extern SigTab sigtab[];
+
 static void
 unimplemented(int8 *name)
 {
@@ -48,10 +50,6 @@ initsema(uint32 *psema)
 // be >0, so it will increment the semaphore to wake up
 // one of the others.  This is the same algorithm used
 // in Plan 9's user-level locks.
-//
-// Note that semaphores are never destroyed (the kernel
-// will clean up when the process exits).  We assume for now
-// that Locks are only used for long-lived structures like M and G.
 
 void
 lock(Lock *l)
@@ -83,6 +81,14 @@ unlock(Lock *l)
 	}
 }
 
+void
+destroylock(Lock *l)
+{
+	if(l->sema != 0) {
+		mach_semdestroy(l->sema);
+		l->sema = 0;
+	}
+}
 
 // User-level semaphore implementation:
 // try to do the operations in user space on u,
@@ -151,7 +157,8 @@ newosproc(M *m, G *g, void *stk, void (*fn)(void))
 		printf("newosproc stk=%p m=%p g=%p fn=%p id=%d/%d ostk=%p\n",
 			stk, m, g, fn, m->id, m->tls[0], &m);
 	}
-	bsdthread_create(stk, m, g, fn);
+	if(bsdthread_create(stk, m, g, fn) < 0)
+		throw("cannot create new OS thread");
 }
 
 // Called to initialize a new m (including the bootstrap m).
@@ -439,3 +446,26 @@ mach_semrelease(uint32 sem)
 	}
 }
 
+void
+sigpanic(void)
+{
+	switch(g->sig) {
+	case SIGBUS:
+		if(g->sigcode0 == BUS_ADRERR && g->sigcode1 < 0x1000)
+			panicstring("invalid memory address or nil pointer dereference");
+		break;
+	case SIGSEGV:
+		if((g->sigcode0 == 0 || g->sigcode0 == SEGV_MAPERR) && g->sigcode1 < 0x1000)
+			panicstring("invalid memory address or nil pointer dereference");
+		break;
+	case SIGFPE:
+		switch(g->sigcode0) {
+		case FPE_INTDIV:
+			panicstring("integer divide by zero");
+		case FPE_INTOVF:
+			panicstring("integer overflow");
+		}
+		panicstring("floating point error");
+	}
+	panicstring(sigtab[g->sig].name);
+}

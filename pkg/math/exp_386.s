@@ -10,8 +10,7 @@ TEXT ·Exp(SB),7,$0
 	CMPL    AX, $0x7ff00000
 	JEQ     not_finite
 	FLDL2E                // F0=log2(e)
-	FMOVD   x+0(FP), F0   // F0=x, F1=log2(e)
-	FMULDP  F0, F1        // F0=x*log2(e)
+	FMULD   x+0(FP), F0   // F0=x*log2(e)
 	FMOVD   F0, F1        // F0=x*log2(e), F1=x*log2(e)
 	FRNDINT               // F0=int(x*log2(e)), F1=x*log2(e)
 	FSUBD   F0, F1        // F0=int(x*log2(e)), F1=x*log2(e)-int(x*log2(e))
@@ -31,8 +30,8 @@ not_finite:
 	JNE     not_neginf
 	CMPL    CX, $0
 	JNE     not_neginf
-	MOVL    $0, r+8(FP)
-	MOVL    $0, r+12(FP)
+	FLDZ                  // F0=0
+	FMOVDP  F0, r+8(FP)
 	RET
 not_neginf:
 	MOVL    CX, r+8(FP)

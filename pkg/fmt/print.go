@@ -24,7 +24,7 @@
 		%o	base 8
 		%x	base 16, with lower-case letters for a-f
 		%X	base 16, with upper-case letters for A-F
-	Floating-point:
+	Floating-point and complex constituents:
 		%e	scientific notation, e.g. -1234.456e+78
 		%E	scientific notation, e.g. -1234.456E+78
 		%f	decimal point but no exponent, e.g. 123.456
@@ -43,7 +43,9 @@
 	For numeric values, the width and precision flags control
 	formatting; width sets the width of the field, precision the
 	number of places after the decimal, if appropriate.  The
-	format %6.2f prints 123.45.
+	format %6.2f prints 123.45. The width of a field is the number
+	of Unicode code points in the string. This differs from C's printf where
+	the field width is the number of bytes.
 
 	Other flags:
 		+	always print a sign for numeric values
@@ -87,15 +89,16 @@ import (
 // Some constants in the form of bytes, to avoid string overhead.
 // Needlessly fastidious, I suppose.
 var (
-	trueBytes       = []byte{'t', 'r', 'u', 'e'}
-	falseBytes      = []byte{'f', 'a', 'l', 's', 'e'}
-	commaSpaceBytes = []byte{',', ' '}
-	nilAngleBytes   = []byte{'<', 'n', 'i', 'l', '>'}
-	nilParenBytes   = []byte{'(', 'n', 'i', 'l', ')'}
-	nilBytes        = []byte{'n', 'i', 'l'}
-	mapBytes        = []byte{'m', 'a', 'p', '['}
-	missingBytes    = []byte{'m', 'i', 's', 's', 'i', 'n', 'g'}
-	extraBytes      = []byte{'?', '(', 'e', 'x', 't', 'r', 'a', ' '}
+	trueBytes       = []byte("true")
+	falseBytes      = []byte("false")
+	commaSpaceBytes = []byte(", ")
+	nilAngleBytes   = []byte("<nil>")
+	nilParenBytes   = []byte("(nil)")
+	nilBytes        = []byte("nil")
+	mapBytes        = []byte("map[")
+	missingBytes    = []byte("missing")
+	extraBytes      = []byte("?(extra ")
+	irparenBytes    = []byte("i)")
 )
 
 // State represents the printer state passed to custom formatters.
@@ -378,6 +381,9 @@ func getInt(a interface{}) (val int64, signed, ok bool) {
 }
 
 func getString(a interface{}) (val string, ok bool) {
+	if a == nil {
+		return "<nil>", ok
+	}
 	// Is it a regular string or []byte type?
 	switch s := a.(type) {
 	case string:
@@ -409,7 +415,7 @@ func getFloat32(a interface{}) (val float32, ok bool) {
 		}
 	}
 	// Must be a renamed floating-point type.
-	switch f := a.(type) {
+	switch f := reflect.NewValue(a).(type) {
 	case *reflect.Float32Value:
 		return float32(f.Get()), true
 	case *reflect.FloatValue:
@@ -431,12 +437,58 @@ func getFloat64(a interface{}) (val float64, ok bool) {
 		}
 	}
 	// Must be a renamed floating-point type.
-	switch f := a.(type) {
+	switch f := reflect.NewValue(a).(type) {
 	case *reflect.Float64Value:
 		return float64(f.Get()), true
 	case *reflect.FloatValue:
 		if floatBits == 64 {
 			return float64(f.Get()), true
+		}
+	}
+	return
+}
+
+var complexBits = reflect.Typeof(complex(0i)).Size() * 8
+
+func getComplex64(a interface{}) (val complex64, ok bool) {
+	// Is it a regular complex type?
+	switch c := a.(type) {
+	case complex64:
+		return c, true
+	case complex:
+		if complexBits == 64 {
+			return complex64(c), true
+		}
+	}
+	// Must be a renamed complex type.
+	switch c := reflect.NewValue(a).(type) {
+	case *reflect.Complex64Value:
+		return complex64(c.Get()), true
+	case *reflect.ComplexValue:
+		if complexBits == 64 {
+			return complex64(c.Get()), true
+		}
+	}
+	return
+}
+
+func getComplex128(a interface{}) (val complex128, ok bool) {
+	// Is it a regular complex type?
+	switch c := a.(type) {
+	case complex128:
+		return c, true
+	case complex:
+		if complexBits == 128 {
+			return complex128(c), true
+		}
+	}
+	// Must be a renamed complex type.
+	switch c := reflect.NewValue(a).(type) {
+	case *reflect.Complex128Value:
+		return complex128(c.Get()), true
+	case *reflect.ComplexValue:
+		if complexBits == 128 {
+			return complex128(c.Get()), true
 		}
 	}
 	return
@@ -473,7 +525,7 @@ func (p *pp) unknownType(v interface{}) {
 }
 
 func (p *pp) printField(field interface{}, plus, sharp bool, depth int) (was_string bool) {
-	if field != nil {
+	if field != nil && depth >= 0 {
 		switch {
 		default:
 			if stringer, ok := field.(Stringer); ok {
@@ -504,6 +556,19 @@ func (p *pp) printField(field interface{}, plus, sharp bool, depth int) (was_str
 			p.fmt.fmt_g32(float32(f))
 		} else {
 			p.fmt.fmt_g64(float64(f))
+		}
+		return false
+	case complex64:
+		p.fmt.fmt_c64(f, 'g')
+		return false
+	case complex128:
+		p.fmt.fmt_c128(f, 'g')
+		return false
+	case complex:
+		if complexBits == 64 {
+			p.fmt.fmt_c64(complex64(f), 'g')
+		} else {
+			p.fmt.fmt_c128(complex128(f), 'g')
 		}
 		return false
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr:
@@ -792,8 +857,12 @@ func (p *pp) doprintf(format string, a []interface{}) {
 
 		// int
 		case 'b':
-			if v, _, ok := getInt(field); ok {
-				p.fmt.fmt_b64(uint64(v)) // always unsigned
+			if v, signed, ok := getInt(field); ok {
+				if signed {
+					p.fmt.fmt_b64(v)
+				} else {
+					p.fmt.fmt_ub64(uint64(v))
+				}
 			} else if v, ok := getFloat32(field); ok {
 				p.fmt.fmt_fb32(v)
 			} else if v, ok := getFloat64(field); ok {
@@ -852,12 +921,16 @@ func (p *pp) doprintf(format string, a []interface{}) {
 				goto badtype
 			}
 
-		// float
+		// float/complex
 		case 'e':
 			if v, ok := getFloat32(field); ok {
 				p.fmt.fmt_e32(v)
 			} else if v, ok := getFloat64(field); ok {
 				p.fmt.fmt_e64(v)
+			} else if v, ok := getComplex64(field); ok {
+				p.fmt.fmt_c64(v, 'e')
+			} else if v, ok := getComplex128(field); ok {
+				p.fmt.fmt_c128(v, 'e')
 			} else {
 				goto badtype
 			}
@@ -866,6 +939,10 @@ func (p *pp) doprintf(format string, a []interface{}) {
 				p.fmt.fmt_E32(v)
 			} else if v, ok := getFloat64(field); ok {
 				p.fmt.fmt_E64(v)
+			} else if v, ok := getComplex64(field); ok {
+				p.fmt.fmt_c64(v, 'E')
+			} else if v, ok := getComplex128(field); ok {
+				p.fmt.fmt_c128(v, 'E')
 			} else {
 				goto badtype
 			}
@@ -874,6 +951,10 @@ func (p *pp) doprintf(format string, a []interface{}) {
 				p.fmt.fmt_f32(v)
 			} else if v, ok := getFloat64(field); ok {
 				p.fmt.fmt_f64(v)
+			} else if v, ok := getComplex64(field); ok {
+				p.fmt.fmt_c64(v, 'f')
+			} else if v, ok := getComplex128(field); ok {
+				p.fmt.fmt_c128(v, 'f')
 			} else {
 				goto badtype
 			}
@@ -882,6 +963,10 @@ func (p *pp) doprintf(format string, a []interface{}) {
 				p.fmt.fmt_g32(v)
 			} else if v, ok := getFloat64(field); ok {
 				p.fmt.fmt_g64(v)
+			} else if v, ok := getComplex64(field); ok {
+				p.fmt.fmt_c64(v, 'g')
+			} else if v, ok := getComplex128(field); ok {
+				p.fmt.fmt_c128(v, 'g')
 			} else {
 				goto badtype
 			}
@@ -890,6 +975,10 @@ func (p *pp) doprintf(format string, a []interface{}) {
 				p.fmt.fmt_G32(v)
 			} else if v, ok := getFloat64(field); ok {
 				p.fmt.fmt_G64(v)
+			} else if v, ok := getComplex64(field); ok {
+				p.fmt.fmt_c64(v, 'G')
+			} else if v, ok := getComplex128(field); ok {
+				p.fmt.fmt_c128(v, 'G')
 			} else {
 				goto badtype
 			}
@@ -909,6 +998,13 @@ func (p *pp) doprintf(format string, a []interface{}) {
 				goto badtype
 			}
 		case 'q':
+			if field != nil {
+				// if object implements String, use the result.
+				if stringer, ok := field.(Stringer); ok {
+					p.fmt.fmt_q(stringer.String())
+					break
+				}
+			}
 			if v, ok := getString(field); ok {
 				p.fmt.fmt_q(v)
 			} else {
@@ -934,6 +1030,10 @@ func (p *pp) doprintf(format string, a []interface{}) {
 
 		// the value's type
 		case 'T':
+			if field == nil {
+				p.buf.Write(nilAngleBytes)
+				break
+			}
 			p.buf.WriteString(reflect.Typeof(field).String())
 
 		default:
@@ -941,9 +1041,11 @@ func (p *pp) doprintf(format string, a []interface{}) {
 			p.buf.WriteByte('%')
 			p.add(c)
 			p.buf.WriteByte('(')
-			p.buf.WriteString(reflect.Typeof(field).String())
-			p.buf.WriteByte('=')
-			p.printField(field, false, false, 0)
+			if field != nil {
+				p.buf.WriteString(reflect.Typeof(field).String())
+				p.buf.WriteByte('=')
+			}
+			p.printField(field, false, false, -1)
 			p.buf.WriteByte(')')
 		}
 	}

@@ -9,44 +9,34 @@
 static	int32	debug	= 0;
 
 // see also unsafe·NewArray
-// makeslice(typ *Type, nel int, cap int) (ary []any);
+// makeslice(typ *Type, len, cap int64) (ary []any);
 void
-·makeslice(SliceType *t, uint32 nel, uint32 cap, Slice ret)
+·makeslice(SliceType *t, int64 len, int64 cap, Slice ret)
 {
-	uint64 size;
+	uintptr size;
 
-	if(cap < nel)
-		cap = nel;
+	if(len < 0 || (int32)len != len)
+		panicstring("makeslice: len out of range");
+	if(cap < len || (int32)cap != cap || cap > ((uintptr)-1) / t->elem->size)
+		panicstring("makeslice: cap out of range");
+
 	size = cap*t->elem->size;
 
-	ret.len = nel;
+	ret.len = len;
 	ret.cap = cap;
 
 	if((t->elem->kind&KindNoPointers))
-		ret.array = mallocgc(size, RefNoPointers, 1);
+		ret.array = mallocgc(size, RefNoPointers, 1, 1);
 	else
 		ret.array = mal(size);
 
 	FLUSH(&ret);
 
 	if(debug) {
-		printf("makeslice(%S, %d, %d); ret=", 
-			*t->string, nel, cap);
+		printf("makeslice(%S, %D, %D); ret=",
+			*t->string, len, cap);
  		·printslice(ret);
 	}
-}
-
-static void
-throwslice(uint32 lb, uint32 hb, uint32 n)
-{
-	prints("slice[");
-	·printint(lb);
-	prints(":");
-	·printint(hb);
-	prints("] of [");
-	·printint(n);
-	prints("] array\n");
-	throw("array slice");
 }
 
 // sliceslice(old []any, lb int, hb int, width int) (ary []any);
@@ -71,7 +61,7 @@ void
 			·printint(old.cap);
 			prints("\n");
 		}
-		throwslice(lb, hb, old.cap);
+		·panicslice();
 	}
 
 	// new array is inside old array
@@ -116,7 +106,7 @@ void
 			·printint(old.cap);
 			prints("\n");
 		}
-		throwslice(lb, old.len, old.cap);
+		·panicslice();
 	}
 
 	// new array is inside old array
@@ -165,7 +155,7 @@ void
 			·printint(width);
 			prints("\n");
 		}
-		throwslice(lb, hb, nel);
+		·panicslice();
 	}
 
 	// new array is inside old array
@@ -196,9 +186,7 @@ void
 void
 ·slicecopy(Slice to, Slice fm, uintptr width, int32 ret)
 {
-	if(fm.array == nil || fm.len == 0 ||
-	   to.array == nil || to.len == 0 ||
-	   width == 0) {
+	if(fm.len == 0 || to.len == 0 || width == 0) {
 		ret = 0;
 		goto out;
 	}

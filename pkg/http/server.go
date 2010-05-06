@@ -32,6 +32,11 @@ var (
 // Objects implementing the Handler interface can be
 // registered to serve a particular path or subtree
 // in the HTTP server.
+//
+// ServeHTTP should write reply headers and data to the Conn
+// and then return.  Returning signals that the request is finished
+// and that the HTTP server can move on to the next request on
+// the connection.
 type Handler interface {
 	ServeHTTP(*Conn, *Request)
 }
@@ -323,12 +328,15 @@ func (f HandlerFunc) ServeHTTP(c *Conn, req *Request) {
 
 // Helper handlers
 
-// NotFound replies to the request with an HTTP 404 not found error.
-func NotFound(c *Conn, req *Request) {
+// Error replies to the request with the specified error message and HTTP code.
+func Error(c *Conn, error string, code int) {
 	c.SetHeader("Content-Type", "text/plain; charset=utf-8")
-	c.WriteHeader(StatusNotFound)
-	io.WriteString(c, "404 page not found\n")
+	c.WriteHeader(code)
+	fmt.Fprintln(c, error)
 }
+
+// NotFound replies to the request with an HTTP 404 not found error.
+func NotFound(c *Conn, req *Request) { Error(c, "404 page not found", StatusNotFound) }
 
 // NotFoundHandler returns a simple request handler
 // that replies to each request with a ``404 page not found'' reply.
@@ -503,7 +511,7 @@ func (mux *ServeMux) ServeHTTP(c *Conn, req *Request) {
 // Handle registers the handler for the given pattern.
 func (mux *ServeMux) Handle(pattern string, handler Handler) {
 	if pattern == "" || pattern[0] != '/' {
-		panicln("http: invalid pattern", pattern)
+		panic("http: invalid pattern " + pattern)
 	}
 
 	mux.m[pattern] = handler
@@ -516,9 +524,20 @@ func (mux *ServeMux) Handle(pattern string, handler Handler) {
 	}
 }
 
+// HandleFunc registers the handler function for the given pattern.
+func (mux *ServeMux) HandleFunc(pattern string, handler func(*Conn, *Request)) {
+	mux.Handle(pattern, HandlerFunc(handler))
+}
+
 // Handle registers the handler for the given pattern
 // in the DefaultServeMux.
 func Handle(pattern string, handler Handler) { DefaultServeMux.Handle(pattern, handler) }
+
+// HandleFunc registers the handler function for the given pattern
+// in the DefaultServeMux.
+func HandleFunc(pattern string, handler func(*Conn, *Request)) {
+	DefaultServeMux.HandleFunc(pattern, handler)
+}
 
 // Serve accepts incoming HTTP connections on the listener l,
 // creating a new service thread for each.  The service threads
@@ -552,20 +571,21 @@ func Serve(l net.Listener, handler Handler) os.Error {
 //	package main
 //
 //	import (
-//		"http";
-//		"io";
+//		"http"
+//		"io"
+//		"log"
 //	)
 //
 //	// hello world, the web server
 //	func HelloServer(c *http.Conn, req *http.Request) {
-//		io.WriteString(c, "hello, world!\n");
+//		io.WriteString(c, "hello, world!\n")
 //	}
 //
 //	func main() {
-//		http.Handle("/hello", http.HandlerFunc(HelloServer));
-//		err := http.ListenAndServe(":12345", nil);
+//		http.HandleFunc("/hello", HelloServer)
+//		err := http.ListenAndServe(":12345", nil)
 //		if err != nil {
-//			panic("ListenAndServe: ", err.String())
+//			log.Exit("ListenAndServe: ", err.String())
 //		}
 //	}
 func ListenAndServe(addr string, handler Handler) os.Error {

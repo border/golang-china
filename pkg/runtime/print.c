@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 #include "runtime.h"
+#include "type.h"
 
 //static Lock debuglock;
 
@@ -83,6 +84,10 @@ vprintf(int8 *s, byte *arg)
 			arg = vrnd(arg, sizeof(uintptr));
 			narg = arg + 8;
 			break;
+		case 'C':
+			arg = vrnd(arg, sizeof(uintptr));
+			narg = arg + 16;
+			break;
 		case 'p':	// pointer-sized
 		case 's':
 			arg = vrnd(arg, sizeof(uintptr));
@@ -118,6 +123,9 @@ vprintf(int8 *s, byte *arg)
 		case 'f':
 			·printfloat(*(float64*)arg);
 			break;
+		case 'C':
+			·printcomplex(*(Complex128*)arg);
+			break;
 		case 'i':
 			·printiface(*(Iface*)arg);
 			break;
@@ -143,7 +151,7 @@ vprintf(int8 *s, byte *arg)
 			·printhex(*(uint64*)arg);
 			break;
 		case '!':
-			·panicl(-1);
+			panic(-1);
 		}
 		arg = narg;
 		lp = p+1;
@@ -154,6 +162,7 @@ vprintf(int8 *s, byte *arg)
 //	unlock(&debuglock);
 }
 
+#pragma textflag 7
 void
 ·printf(String s, ...)
 {
@@ -256,6 +265,15 @@ void
 	buf[n+5] = (e/10)%10 + '0';
 	buf[n+6] = (e%10) + '0';
 	write(fd, buf, n+7);
+}
+
+void
+·printcomplex(Complex128 v)
+{
+	write(fd, "(", 1);
+	·printfloat(v.real);
+	·printfloat(v.imag);
+	write(fd, "i)", 2);
 }
 
 void

@@ -9,9 +9,15 @@ TEXT	_rt0_amd64(SB),7,$-8
 	MOVQ	0(DI), AX		// argc
 	LEAQ	8(DI), BX		// argv
 	SUBQ	$(4*8+7), SP		// 2args 2auto
-	ANDQ	$~7, SP
+	ANDQ	$~15, SP
 	MOVQ	AX, 16(SP)
 	MOVQ	BX, 24(SP)
+
+	// if there is an initcgo, call it.
+	MOVQ	initcgo(SB), AX
+	TESTQ	AX, AX
+	JZ	2(PC)
+	CALL	AX
 
 	// set the per-goroutine and per-mach registers
 	LEAQ	m0(SB), m
@@ -143,11 +149,11 @@ TEXT reflect·call(SB), 7, $0
 	MOVQ	g, (m_morebuf+gobuf_g)(m)
 
 	// Set up morestack arguments to call f on a new stack.
-	// We set f's frame size to zero, meaning
-	// allocate a standard sized stack segment.
-	// If it turns out that f needs a larger frame than this,
-	// f's usual stack growth prolog will allocate
-	// a new segment (and recopy the arguments).
+	// We set f's frame size to 1, as a hint to newstack
+	// that this is a call from reflect·call.
+	// If it turns out that f needs a larger frame than
+	// the default stack, f's usual stack growth prolog will
+	// allocate a new segment (and recopy the arguments).
 	MOVQ	8(SP), AX	// fn
 	MOVQ	16(SP), BX	// arg frame
 	MOVL	24(SP), CX	// arg size
@@ -155,7 +161,7 @@ TEXT reflect·call(SB), 7, $0
 	MOVQ	AX, m_morepc(m)	// f's PC
 	MOVQ	BX, m_morefp(m)	// argument frame pointer
 	MOVL	CX, m_moreargs(m)	// f's argument size
-	MOVL	$0, m_moreframe(m)	// f's frame size
+	MOVL	$1, m_moreframe(m)	// f's frame size
 
 	// Call newstack on m's scheduling stack.
 	MOVQ	m_g0(m), g
@@ -276,14 +282,13 @@ TEXT jmpdefer(SB), 7, $0
 // Save g and m across the call,
 // since the foreign code might reuse them.
 TEXT runcgo(SB),7,$32
-	// Save old registers.
-	MOVQ	fn+0(FP),AX
-	MOVQ	arg+8(FP),DI	// DI = first argument in AMD64 ABI
+	MOVQ	fn+0(FP), R12
+	MOVQ	arg+8(FP), R13
 	MOVQ	SP, CX
 
 	// Figure out if we need to switch to m->g0 stack.
-	MOVQ	m_g0(m), R8
-	CMPQ	R8, g
+	MOVQ	m_g0(m), SI
+	CMPQ	SI, g
 	JEQ	2(PC)
 	MOVQ	(m_sched+gobuf_sp)(m), SP
 
@@ -293,7 +298,17 @@ TEXT runcgo(SB),7,$32
 	MOVQ	g, 24(SP)	// save old g, m, SP
 	MOVQ	m, 16(SP)
 	MOVQ	CX, 8(SP)
-	CALL	AX
+
+	// Save g and m values for a potential callback.  The callback
+	// will start running with on the g0 stack and as such should
+	// have g set to m->g0.
+	MOVQ	m, DI		// DI = first argument in AMD64 ABI
+				// SI, second argument, set above
+	MOVQ	libcgo_set_scheduler(SB), BX
+	CALL	BX
+
+	MOVQ	R13, DI		// DI = first argument in AMD64 ABI
+	CALL	R12
 
 	// Restore registers, stack pointer.
 	MOVQ	16(SP), m
@@ -301,13 +316,67 @@ TEXT runcgo(SB),7,$32
 	MOVQ	8(SP), SP
 	RET
 
-// check that SP is in range [g->stackbase, g->stackguard)
-TEXT stackcheck(SB), 7, $0
-	CMPQ g_stackbase(g), SP
-	JHI 2(PC)
-	INT $3
-	CMPQ SP, g_stackguard(g)
-	JHI 2(PC)
-	INT $3
+// runcgocallback(G *g1, void* sp, void (*fn)(void))
+// Switch to g1 and sp, call fn, switch back.  fn's arguments are on
+// the new stack.
+TEXT runcgocallback(SB),7,$48
+	MOVQ	g1+0(FP), DX
+	MOVQ	sp+8(FP), AX
+	MOVQ	fp+16(FP), BX
+
+	MOVQ	DX, g
+
+	// We are running on m's scheduler stack.  Save current SP
+	// into m->sched.sp so that a recursive call to runcgo doesn't
+	// clobber our stack, and also so that we can restore
+	// the SP when the call finishes.  Reusing m->sched.sp
+	// for this purpose depends on the fact that there is only
+	// one possible gosave of m->sched.
+	MOVQ	SP, (m_sched+gobuf_sp)(m)
+
+	// Set new SP, call fn
+	MOVQ	AX, SP
+	CALL	BX
+
+	// Restore old SP, return
+	MOVQ	(m_sched+gobuf_sp)(m), SP
 	RET
 
+// check that SP is in range [g->stackbase, g->stackguard)
+TEXT stackcheck(SB), 7, $0
+	CMPQ	g_stackbase(g), SP
+	JHI	2(PC)
+	INT	$3
+	CMPQ	SP, g_stackguard(g)
+	JHI	2(PC)
+	INT	$3
+	RET
+
+TEXT	·memclr(SB),7,$0
+	MOVQ	8(SP), DI		// arg 1 addr
+	MOVL	16(SP), CX		// arg 2 count
+	ADDL	$7, CX
+	SHRL	$3, CX
+	MOVQ	$0, AX
+	CLD
+	REP
+	STOSQ
+	RET
+
+TEXT	·getcallerpc+0(SB),7,$0
+	MOVQ	x+0(FP),AX		// addr of first arg
+	MOVQ	-8(AX),AX		// get calling pc
+	RET
+
+TEXT	·setcallerpc+0(SB),7,$0
+	MOVQ	x+0(FP),AX		// addr of first arg
+	MOVQ	x+8(FP), BX
+	MOVQ	BX, -8(AX)		// set calling pc
+	RET
+
+TEXT getcallersp(SB),7,$0
+	MOVQ	sp+0(FP), AX
+	RET
+
+GLOBL initcgo(SB), $8
+GLOBL libcgo_set_scheduler(SB), $8

@@ -107,18 +107,18 @@ type TimeFormatTest struct {
 	formattedValue string
 }
 
-var iso8601Formats = []TimeFormatTest{
+var rfc3339Formats = []TimeFormatTest{
 	TimeFormatTest{Time{2008, 9, 17, 20, 4, 26, Wednesday, 0, "UTC"}, "2008-09-17T20:04:26Z"},
-	TimeFormatTest{Time{1994, 9, 17, 20, 4, 26, Wednesday, -18000, "EST"}, "1994-09-17T20:04:26-0500"},
-	TimeFormatTest{Time{2000, 12, 26, 1, 15, 6, Wednesday, 15600, "OTO"}, "2000-12-26T01:15:06+0420"},
+	TimeFormatTest{Time{1994, 9, 17, 20, 4, 26, Wednesday, -18000, "EST"}, "1994-09-17T20:04:26-05:00"},
+	TimeFormatTest{Time{2000, 12, 26, 1, 15, 6, Wednesday, 15600, "OTO"}, "2000-12-26T01:15:06+04:20"},
 }
 
-func TestISO8601Conversion(t *testing.T) {
-	for _, f := range iso8601Formats {
-		if f.time.Format(ISO8601) != f.formattedValue {
-			t.Error("ISO8601:")
+func TestRFC3339Conversion(t *testing.T) {
+	for _, f := range rfc3339Formats {
+		if f.time.Format(RFC3339) != f.formattedValue {
+			t.Error("RFC3339:")
 			t.Errorf("  want=%+v", f.formattedValue)
-			t.Errorf("  have=%+v", f.time.Format(ISO8601))
+			t.Errorf("  have=%+v", f.time.Format(RFC3339))
 		}
 	}
 }
@@ -133,9 +133,10 @@ var formatTests = []FormatTest{
 	FormatTest{"ANSIC", ANSIC, "Thu Feb  4 21:00:57 2010"},
 	FormatTest{"UnixDate", UnixDate, "Thu Feb  4 21:00:57 PST 2010"},
 	FormatTest{"RubyDate", RubyDate, "Thu Feb 04 21:00:57 -0800 2010"},
+	FormatTest{"RFC822", RFC822, "04 Feb 10 2100 PST"},
 	FormatTest{"RFC850", RFC850, "Thursday, 04-Feb-10 21:00:57 PST"},
 	FormatTest{"RFC1123", RFC1123, "Thu, 04 Feb 2010 21:00:57 PST"},
-	FormatTest{"ISO8601", ISO8601, "2010-02-04T21:00:57-0800"},
+	FormatTest{"RFC3339", RFC3339, "2010-02-04T21:00:57-08:00"},
 	FormatTest{"Kitchen", Kitchen, "9:00PM"},
 	FormatTest{"am/pm", "3pm", "9pm"},
 	FormatTest{"AM/PM", "3PM", "9PM"},
@@ -167,9 +168,7 @@ var parseTests = []ParseTest{
 	ParseTest{"RubyDate", RubyDate, "Thu Feb 04 21:00:57 -0800 2010", true, true, 1},
 	ParseTest{"RFC850", RFC850, "Thursday, 04-Feb-10 21:00:57 PST", true, true, 1},
 	ParseTest{"RFC1123", RFC1123, "Thu, 04 Feb 2010 21:00:57 PST", true, true, 1},
-	ParseTest{"ISO8601", ISO8601, "2010-02-04T21:00:57-0800", true, false, 1},
-	// Negative year
-	ParseTest{"ANSIC", ANSIC, "Thu Feb  4 21:00:57 -2010", false, true, -1},
+	ParseTest{"RFC3339", RFC3339, "2010-02-04T21:00:57-08:00", true, false, 1},
 	// Amount of white space should not matter.
 	ParseTest{"ANSIC", ANSIC, "Thu Feb 4 21:00:57 2010", false, true, 1},
 	ParseTest{"ANSIC", ANSIC, "Thu      Feb     4     21:00:57     2010", false, true, 1},
@@ -235,9 +234,13 @@ func checkTime(time *Time, test *ParseTest, t *testing.T) {
 }
 
 func TestFormatAndParse(t *testing.T) {
-	const fmt = "Mon MST " + ISO8601 // all fields
+	const fmt = "Mon MST " + RFC3339 // all fields
 	f := func(sec int64) bool {
 		t1 := SecondsToLocalTime(sec)
+		if t1.Year < 1000 || t1.Year > 9999 {
+			// not required to work
+			return true
+		}
 		t2, err := Parse(fmt, t1.Format(fmt))
 		if err != nil {
 			t.Errorf("error: %s", err)
@@ -269,7 +272,7 @@ type ParseErrorTest struct {
 
 var parseErrorTests = []ParseErrorTest{
 	ParseErrorTest{ANSIC, "Feb  4 21:00:60 2010", "parse"}, // cannot parse Feb as Mon
-	ParseErrorTest{ANSIC, "Thu Feb  4 21:00:57 @2010", "format"},
+	ParseErrorTest{ANSIC, "Thu Feb  4 21:00:57 @2010", "parse"},
 	ParseErrorTest{ANSIC, "Thu Feb  4 21:00:60 2010", "second out of range"},
 	ParseErrorTest{ANSIC, "Thu Feb  4 21:61:57 2010", "minute out of range"},
 	ParseErrorTest{ANSIC, "Thu Feb  4 24:00:60 2010", "hour out of range"},
@@ -283,6 +286,20 @@ func TestParseErrors(t *testing.T) {
 		} else if strings.Index(err.String(), test.expect) < 0 {
 			t.Errorf("expected error with %q for %q %q; got %s\n", test.expect, test.format, test.value, err)
 		}
+	}
+}
+
+// Check that a time without a Zone still produces a (numeric) time zone
+// when formatted with MST as a requested zone.
+func TestMissingZone(t *testing.T) {
+	time, err := Parse(RubyDate, "Tue Feb 02 16:10:03 -0500 2006")
+	if err != nil {
+		t.Fatal("error parsing date:", err)
+	}
+	expect := "Tue Feb  2 16:10:03 -0500 2006" // -0500 not EST
+	str := time.Format(UnixDate)               // uses MST as its time zone
+	if str != expect {
+		t.Errorf("expected %q got %q", expect, str)
 	}
 }
 

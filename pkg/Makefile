@@ -26,6 +26,7 @@ DIRS=\
 	bignum\
 	bufio\
 	bytes\
+	cmath\
 	compress/flate\
 	compress/gzip\
 	compress/zlib\
@@ -35,13 +36,17 @@ DIRS=\
 	container/vector\
 	crypto/aes\
 	crypto/block\
+	crypto/blowfish\
 	crypto/hmac\
 	crypto/md4\
 	crypto/md5\
+	crypto/rand\
 	crypto/rc4\
+	crypto/ripemd160\
 	crypto/rsa\
 	crypto/sha1\
 	crypto/sha256\
+	crypto/sha512\
 	crypto/subtle\
 	crypto/tls\
 	crypto/x509\
@@ -62,9 +67,7 @@ DIRS=\
 	exp/datafmt\
 	exp/draw\
 	exp/eval\
-	exp/exception\
 	exp/iterable\
-	exp/parser\
 	expvar\
 	flag\
 	fmt\
@@ -78,7 +81,9 @@ DIRS=\
 	hash\
 	hash/adler32\
 	hash/crc32\
+	hash/crc64\
 	http\
+	http/pprof\
 	image\
 	image/jpeg\
 	image/png\
@@ -86,9 +91,11 @@ DIRS=\
 	io/ioutil\
 	json\
 	log\
-	malloc\
 	math\
+	mime\
 	net\
+	netchan\
+	nntp\
 	once\
 	os\
 	os/signal\
@@ -98,7 +105,9 @@ DIRS=\
 	reflect\
 	regexp\
 	rpc\
+	rpc/jsonrpc\
 	runtime\
+	runtime/pprof\
 	scanner\
 	sort\
 	strconv\
@@ -114,26 +123,25 @@ DIRS=\
 	testing/script\
 	time\
 	unicode\
+	utf16\
 	utf8\
 	websocket\
-	xgb\
 	xml\
 
 NOTEST=\
 	debug/proc\
-	exp/draw\
 	go/ast\
 	go/doc\
 	go/token\
 	hash\
+	http/pprof\
 	image\
 	image/jpeg\
-	malloc\
 	rand\
 	runtime\
+	runtime/pprof\
 	syscall\
 	testing/iotest\
-	xgb\
 
 NOBENCH=\
 	container/vector\
@@ -143,6 +151,25 @@ TEST=\
 
 BENCH=\
 	$(filter-out $(NOBENCH),$(TEST))
+
+# Disable tests that NaCl cannot run yet.
+ifeq ($(GOOS),nacl)
+NOTEST+=archive/tar  # no pipe
+NOTEST+=debug/dwarf  # no pread
+NOTEST+=debug/macho  # no pread
+NOTEST+=debug/elf    # no pread
+NOTEST+=exec         # no pipe
+NOTEST+=http         # no network
+NOTEST+=log          # no runtime.Caller
+NOTEST+=net          # no network
+NOTEST+=os           # many things unimplemented
+NOTEST+=os/signal    # no signals
+NOTEST+=path         # tree walking does not work
+NOTEST+=rpc          # no network
+NOTEST+=syslog       # no network
+NOTEST+=time         # no syscall.Kill, syscall.SIGCHLD for sleep tests
+NOTEST+=websocket    # no network
+endif
 
 clean.dirs: $(addsuffix .clean, $(DIRS))
 install.dirs: $(addsuffix .install, $(DIRS))
@@ -171,7 +198,7 @@ install: install.dirs
 
 test:	test.dirs
 
-bench:	bench.dirs
+bench:	bench.dirs ../../test/garbage.bench
 
 nuke: nuke.dirs
 	rm -rf "$(GOROOT)"/pkg/*

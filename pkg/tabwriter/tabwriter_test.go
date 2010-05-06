@@ -31,7 +31,7 @@ func (b *buffer) Write(buf []byte) (written int, err os.Error) {
 			b.a[n+i] = buf[i]
 		}
 	} else {
-		panicln("buffer.Write: buffer too small", n, m, cap(b.a))
+		panic("buffer.Write: buffer too small")
 	}
 	return len(buf), nil
 }
@@ -318,6 +318,7 @@ var tests = []entry{
 			"11\t222\t3333\t44444\n",
 
 		"1|2|3|4\n" +
+			"---\n" +
 			"11|222|3333|44444\n",
 	},
 

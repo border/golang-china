@@ -20,10 +20,8 @@ gotraceback(void)
 }
 
 void
-·panicl(int32 lno)
+panic(int32 unused)
 {
-	uint8 *sp;
-
 	fd = 2;
 	if(panicking) {
 		printf("double panic\n");
@@ -31,10 +29,9 @@ void
 	}
 	panicking++;
 
-	printf("\npanic PC=%X\n", (uint64)(uintptr)&lno);
-	sp = (uint8*)&lno;
+	printf("\npanic PC=%X\n", (uint64)(uintptr)&unused);
 	if(gotraceback()){
-		traceback(·getcallerpc(&lno), sp, g);
+		traceback(·getcallerpc(&unused), getcallersp(&unused), 0, g);
 		tracebackothers(g);
 	}
 	breakpoint();  // so we can grab it in a debugger
@@ -42,27 +39,29 @@ void
 }
 
 void
-·throwindex(void)
+·panicindex(void)
 {
-	throw("index out of range");
+	panicstring("index out of range");
 }
 
 void
-·throwslice(void)
+·panicslice(void)
 {
-	throw("slice out of range");
+	panicstring("slice bounds out of range");
 }
 
 void
 ·throwreturn(void)
 {
-	throw("no return at end of a typed function");
+	// can only happen if compiler is broken
+	throw("no return at end of a typed function - compiler is broken");
 }
 
 void
 ·throwinit(void)
 {
-	throw("recursive call during initialization");
+	// can only happen with linker skew
+	throw("recursive call during initialization - linker skew");
 }
 
 void
@@ -70,9 +69,18 @@ throw(int8 *s)
 {
 	fd = 2;
 	printf("throw: %s\n", s);
-	·panicl(-1);
+	panic(-1);
 	*(int32*)0 = 0;	// not reached
 	exit(1);	// even more not reached
+}
+
+void
+panicstring(int8 *s)
+{
+	Eface err;
+	
+	·newErrorString(gostring((byte*)s), &err);
+	·panic(err);
 }
 
 void
@@ -206,6 +214,15 @@ getenv(int8 *s)
 	return nil;
 }
 
+void
+·getgoroot(String out)
+{
+	byte *p;
+
+	p = getenv("GOROOT");
+	out = gostring(p);
+	FLUSH(&out);
+}
 
 int32
 atoi(byte *p)
@@ -412,7 +429,7 @@ nohash(uint32 s, void *a)
 {
 	USED(s);
 	USED(a);
-	throw("hash of unhashable type");
+	panicstring("hash of unhashable type");
 	return 0;
 }
 
@@ -422,25 +439,8 @@ noequal(uint32 s, void *a, void *b)
 	USED(s);
 	USED(a);
 	USED(b);
-	throw("comparing uncomparable types");
+	panicstring("comparing uncomparable types");
 	return 0;
-}
-
-static void
-noprint(uint32 s, void *a)
-{
-	USED(s);
-	USED(a);
-	throw("print of unprintable type");
-}
-
-static void
-nocopy(uint32 s, void *a, void *b)
-{
-	USED(s);
-	USED(a);
-	USED(b);
-	throw("copy of uncopyable type");
 }
 
 Alg
@@ -451,7 +451,6 @@ algarray[] =
 [ASTRING]	{ strhash, strequal, strprint, memcopy },
 [AINTER]		{ interhash, interequal, interprint, memcopy },
 [ANILINTER]	{ nilinterhash, nilinterequal, nilinterprint, memcopy },
-[AFAKE]	{ nohash, noequal, noprint, nocopy },
 };
 
 #pragma textflag 7
@@ -461,3 +460,47 @@ FLUSH(void *v)
 	USED(v);
 }
 
+int64
+nanotime(void)
+{
+	int64 sec;
+	int32 usec;
+
+	sec = 0;
+	usec = 0;
+	gettime(&sec, &usec);
+	return sec*1000000000 + (int64)usec*1000;
+}
+
+void
+·Caller(int32 skip, uintptr retpc, String retfile, int32 retline, bool retbool)
+{
+	Func *f;
+
+	if(callers(1+skip, &retpc, 1) == 0 || (f = findfunc(retpc-1)) == nil) {
+		retfile = emptystring;
+		retline = 0;
+		retbool = false;
+	} else {
+		retfile = f->src;
+		retline = funcline(f, retpc-1);
+		retbool = true;
+	}
+	FLUSH(&retfile);
+	FLUSH(&retline);
+	FLUSH(&retbool);
+}
+
+void
+·Callers(int32 skip, Slice pc, int32 retn)
+{
+	retn = callers(skip, (uintptr*)pc.array, pc.len);
+	FLUSH(&retn);
+}
+
+void
+·FuncForPC(uintptr pc, void *retf)
+{
+	retf = findfunc(pc);
+	FLUSH(&retf);
+}

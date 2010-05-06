@@ -37,6 +37,18 @@ TEXT	write(SB),7,$0
 	CALL	notok(SB)
 	RET
 
+// void gettime(int64 *sec, int32 *usec)
+TEXT gettime(SB), 7, $32
+	MOVQ	SP, DI	// must be non-nil, unused
+	MOVQ	$0, SI
+	MOVQ	$(0x2000000+116), AX
+	SYSCALL
+	MOVQ	sec+0(FP), DI
+	MOVQ	AX, (DI)
+	MOVQ	usec+8(FP), DI
+	MOVL	DX, (DI)
+	RET
+
 TEXT	sigaction(SB),7,$0
 	MOVL	8(SP), DI		// arg 1 sig
 	MOVQ	16(SP), SI		// arg 2 act
@@ -65,11 +77,11 @@ TEXT sigtramp(SB),7,$40
 
 TEXT	·mmap(SB),7,$0
 	MOVQ	8(SP), DI		// arg 1 addr
-	MOVL	16(SP), SI		// arg 2 len
-	MOVL	20(SP), DX		// arg 3 prot
-	MOVL	24(SP), R10		// arg 4 flags
-	MOVL	28(SP), R8		// arg 5 fid
-	MOVL	32(SP), R9		// arg 6 offset
+	MOVQ	16(SP), SI		// arg 2 len
+	MOVL	24(SP), DX		// arg 3 prot
+	MOVL	28(SP), R10		// arg 4 flags
+	MOVL	32(SP), R8		// arg 5 fid
+	MOVL	36(SP), R9		// arg 6 offset
 	MOVL	$(0x2000000+197), AX	// syscall entry
 	SYSCALL
 	JCC	2(PC)
@@ -79,28 +91,6 @@ TEXT	·mmap(SB),7,$0
 TEXT	notok(SB),7,$0
 	MOVL	$0xf1, BP
 	MOVQ	BP, (BP)
-	RET
-
-TEXT	·memclr(SB),7,$0
-	MOVQ	8(SP), DI		// arg 1 addr
-	MOVL	16(SP), CX		// arg 2 count
-	ADDL	$7, CX
-	SHRL	$3, CX
-	MOVQ	$0, AX
-	CLD
-	REP
-	STOSQ
-	RET
-
-TEXT	·getcallerpc+0(SB),7,$0
-	MOVQ	x+0(FP),AX		// addr of first arg
-	MOVQ	-8(AX),AX		// get calling pc
-	RET
-
-TEXT	·setcallerpc+0(SB),7,$0
-	MOVQ	x+0(FP),AX		// addr of first arg
-	MOVQ	x+8(FP), BX
-	MOVQ	BX, -8(AX)		// set calling pc
 	RET
 
 TEXT sigaltstack(SB),7,$0
@@ -123,10 +113,13 @@ TEXT bsdthread_create(SB),7,$0
 	MOVQ	gg+24(SP), R10	// "pthread"
 // TODO(rsc): why do we get away with 0 flags here but not on 386?
 	MOVQ	$0, R8	// flags
+	MOVQ	$0, R9	// paranoia
 	MOVQ	$(0x2000000+360), AX	// bsdthread_create
 	SYSCALL
-	JCC 2(PC)
-	CALL	notok(SB)
+	JCC 3(PC)
+	MOVL	$-1, AX
+	RET
+	MOVL	$0, AX
 	RET
 
 // The thread that bsdthread_create creates starts executing here,
@@ -156,6 +149,9 @@ TEXT bsdthread_register(SB),7,$0
 	MOVQ	$bsdthread_start(SB), DI	// threadstart
 	MOVQ	$0, SI	// wqthread, not used by us
 	MOVQ	$0, DX	// pthsize, not used by us
+	MOVQ	$0, R10	// dummy_value [sic]
+	MOVQ	$0, R8	// targetconc_ptr
+	MOVQ	$0, R9	// dispatchqueue_offset
 	MOVQ	$(0x2000000+366), AX	// bsdthread_register
 	SYSCALL
 	JCC 2(PC)
@@ -226,4 +222,3 @@ TEXT mach_semaphore_signal_all(SB),7,$0
 	MOVL	$(0x1000000+34), AX	// semaphore_signal_all_trap
 	SYSCALL
 	RET
-

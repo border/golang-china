@@ -28,9 +28,9 @@ var good_re = []string{
 	`[abc]`,
 	`[^1234]`,
 	`[^\n]`,
+	`\!\\`,
 }
 
-// TODO: nice to do this with a map
 type stringError struct {
 	re  string
 	err os.Error
@@ -97,6 +97,18 @@ var matches = []tester{
 	tester{`[.]`, ".", vec{0, 1}},
 	tester{`/$`, "/abc/", vec{4, 5}},
 	tester{`/$`, "/abc", vec{}},
+
+	// fixed bugs
+	tester{`ab$`, "cab", vec{1, 3}},
+	tester{`axxb$`, "axxcb", vec{}},
+
+	// can backslash-escape any punctuation
+	tester{`\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\{\|\}\~`,
+		`!"#$%&'()*+,-./:;<=>?@[\]^_{|}~`, vec{0, 31}},
+	tester{`[\!\"\#\$\%\&\'\(\)\*\+\,\-\.\/\:\;\<\=\>\?\@\[\\\]\^\_\{\|\}\~]+`,
+		`!"#$%&'()*+,-./:;<=>?@[\]^_{|}~`, vec{0, 31}},
+	tester{"\\`", "`", vec{0, 1}},
+	tester{"[\\`]+", "`", vec{0, 1}},
 }
 
 func compileTest(t *testing.T, expr string, error os.Error) *Regexp {
@@ -158,7 +170,7 @@ func executeTest(t *testing.T, expr string, str string, match []int) {
 		printVec(t, match)
 	}
 	// now try bytes
-	m = re.Execute(strings.Bytes(str))
+	m = re.Execute([]byte(str))
 	if !equal(m, match) {
 		t.Errorf("Execute failure on %#q matching %q:", expr, str)
 		printVec(t, m)
@@ -196,7 +208,7 @@ func matchTest(t *testing.T, expr string, str string, match []int) {
 		t.Errorf("MatchString failure on %#q matching %q: %t should be %t", expr, str, m, len(match) > 0)
 	}
 	// now try bytes
-	m = re.Match(strings.Bytes(str))
+	m = re.Match([]byte(str))
 	if m != (len(match) > 0) {
 		t.Errorf("Match failure on %#q matching %q: %t should be %t", expr, str, m, len(match) > 0)
 	}
@@ -299,6 +311,18 @@ var replaceTests = []ReplaceTest{
 	ReplaceTest{"[a-c]*", "x", "abcbcdcdedef", "xdxdxexdxexfx"},
 }
 
+type ReplaceFuncTest struct {
+	pattern       string
+	replacement   func(string) string
+	input, output string
+}
+
+var replaceFuncTests = []ReplaceFuncTest{
+	ReplaceFuncTest{"[a-c]", func(s string) string { return "x" + s + "y" }, "defabcdef", "defxayxbyxcydef"},
+	ReplaceFuncTest{"[a-c]+", func(s string) string { return "x" + s + "y" }, "defabcdef", "defxabcydef"},
+	ReplaceFuncTest{"[a-c]*", func(s string) string { return "x" + s + "y" }, "defabcdef", "xydxyexyfxabcydxyexyfxy"},
+}
+
 func TestReplaceAll(t *testing.T) {
 	for _, tc := range replaceTests {
 		re, err := Compile(tc.pattern)
@@ -312,9 +336,30 @@ func TestReplaceAll(t *testing.T) {
 				tc.pattern, tc.input, tc.replacement, actual, tc.output)
 		}
 		// now try bytes
-		actual = string(re.ReplaceAll(strings.Bytes(tc.input), strings.Bytes(tc.replacement)))
+		actual = string(re.ReplaceAll([]byte(tc.input), []byte(tc.replacement)))
 		if actual != tc.output {
 			t.Errorf("%q.Replace(%q,%q) = %q; want %q",
+				tc.pattern, tc.input, tc.replacement, actual, tc.output)
+		}
+	}
+}
+
+func TestReplaceAllFunc(t *testing.T) {
+	for _, tc := range replaceFuncTests {
+		re, err := Compile(tc.pattern)
+		if err != nil {
+			t.Errorf("Unexpected error compiling %q: %v", tc.pattern, err)
+			continue
+		}
+		actual := re.ReplaceAllStringFunc(tc.input, tc.replacement)
+		if actual != tc.output {
+			t.Errorf("%q.ReplaceFunc(%q,%q) = %q; want %q",
+				tc.pattern, tc.input, tc.replacement, actual, tc.output)
+		}
+		// now try bytes
+		actual = string(re.ReplaceAllFunc([]byte(tc.input), func(s []byte) []byte { return []byte(tc.replacement(string(s))) }))
+		if actual != tc.output {
+			t.Errorf("%q.ReplaceFunc(%q,%q) = %q; want %q",
 				tc.pattern, tc.input, tc.replacement, actual, tc.output)
 		}
 	}
@@ -416,7 +461,7 @@ func TestAllMatches(t *testing.T) {
 		case "matchit":
 			result = make([]string, len(c.input)+1)
 			i := 0
-			b := strings.Bytes(c.input)
+			b := []byte(c.input)
 			for match := range re.AllMatchesIter(b, c.n) {
 				result[i] = string(match)
 				i++
@@ -432,7 +477,7 @@ func TestAllMatches(t *testing.T) {
 			result = result[0:i]
 		case "match":
 			result = make([]string, len(c.input)+1)
-			b := strings.Bytes(c.input)
+			b := []byte(c.input)
 			i := 0
 			for _, match := range re.AllMatches(b, c.n) {
 				result[i] = string(match)
@@ -505,5 +550,15 @@ func BenchmarkNotLiteral(b *testing.B) {
 			println("no match!")
 			break
 		}
+	}
+}
+
+func BenchmarkReplaceAll(b *testing.B) {
+	x := "abcdefghijklmnopqrstuvwxyz"
+	b.StopTimer()
+	re, _ := Compile("[cjrw]")
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		re.ReplaceAllString(x, "")
 	}
 }

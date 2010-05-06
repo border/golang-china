@@ -7,6 +7,8 @@
 #include "malloc.h"
 #include "os.h"
 
+static void unwindstack(G*, byte*);
+
 typedef struct Sched Sched;
 
 M	m0;
@@ -102,6 +104,7 @@ schedinit(void)
 	byte *p;
 
 	allm = m;
+	m->nomemprof++;
 
 	mallocinit();
 	goargs();
@@ -118,6 +121,8 @@ schedinit(void)
 	sched.mcpumax = sched.gomaxprocs;
 	sched.mcount = 1;
 	sched.predawn = 1;
+
+	m->nomemprof--;
 }
 
 // Called after main·init_function; main·main will be called on return.
@@ -152,7 +157,7 @@ tracebackothers(G *me)
 		if(g == me || g->status == Gdead)
 			continue;
 		printf("\ngoroutine %d [%d]:\n", g->goid, g->status);
-		traceback(g->sched.pc, g->sched.sp, g);
+		traceback(g->sched.pc, g->sched.sp, 0, g);
 	}
 }
 
@@ -220,26 +225,6 @@ mget(G *g)
 	return m;
 }
 
-// Put on gfree list.  Sched must be locked.
-static void
-gfput(G *g)
-{
-	g->schedlink = sched.gfree;
-	sched.gfree = g;
-}
-
-// Get from gfree list.  Sched must be locked.
-static G*
-gfget(void)
-{
-	G *g;
-
-	g = sched.gfree;
-	if(g)
-		sched.gfree = g->schedlink;
-	return g;
-}
-
 // Mark g ready to run.
 void
 ready(G *g)
@@ -263,7 +248,7 @@ readylocked(G *g)
 	}
 
 	// Mark runnable.
-	if(g->status == Grunnable || g->status == Grunning)
+	if(g->status == Grunnable || g->status == Grunning || g->status == Grecovery)
 		throw("bad g->status in ready");
 	g->status = Grunnable;
 
@@ -367,6 +352,10 @@ stoptheworld(void)
 	gcwaiting = 1;
 	sched.mcpumax = 1;
 	while(sched.mcpu > 1) {
+		// It would be unsafe for multiple threads to be using
+		// the stopped note at once, but there is only
+		// ever one thread doing garbage collection,
+		// so this is okay.
 		noteclear(&sched.stopped);
 		sched.waitstop = 1;
 		unlock(&sched);
@@ -434,23 +423,20 @@ matchmg(void)
 			// when it is just in a register (R14 on amd64).
 			m->alllink = allm;
 			allm = m;
-			m->g0 = malg(8192);
 			m->id = sched.mcount++;
 
 			if(libcgo_thread_start != nil) {
 				CgoThreadStart ts;
-				// pthread_create will make us a stack,
-				// so free the one malg made.
-				stackfree(m->g0->stack0);
-				m->g0->stack0 = nil;
-				m->g0->stackguard = nil;
-				m->g0->stackbase = nil;
+				// pthread_create will make us a stack.
+				m->g0 = malg(-1);
 				ts.m = m;
 				ts.g = m->g0;
 				ts.fn = mstart;
 				runcgo(libcgo_thread_start, &ts);
-			} else
+			} else {
+				m->g0 = malg(8192);
 				newosproc(m, m->g0, m->g0->stackbase, mstart);
+			}
 		}
 		mnextg(m, g);
 	}
@@ -465,6 +451,31 @@ scheduler(void)
 	lock(&sched);
 	if(gosave(&m->sched) != 0){
 		gp = m->curg;
+		if(gp->status == Grecovery) {
+			// switched to scheduler to get stack unwound.
+			// don't go through the full scheduling logic.
+			Defer *d;
+
+			d = gp->defer;
+			gp->defer = d->link;
+			
+			// unwind to the stack frame with d->sp in it.
+			unwindstack(gp, d->sp);
+
+			// make the deferproc for this d return again,
+			// this time returning 1.  function will jump to
+			// standard return epilogue.
+			// the -2*sizeof(uintptr) makes up for the
+			// two extra words that are on the stack at
+			// each call to deferproc.
+			// (the pc we're returning to does pop pop
+			// before it tests the return value.)
+			gp->sched.sp = getcallersp(d->sp - 2*sizeof(uintptr));
+			gp->sched.pc = d->pc;
+			gp->status = Grunning;
+			free(d);
+			gogo(&gp->sched, 1);
+		}
 
 		// Jumped here via gosave/gogo, so didn't
 		// execute lock(&sched) above.
@@ -494,6 +505,7 @@ scheduler(void)
 				gp->lockedm = nil;
 				m->lockedg = nil;
 			}
+			unwindstack(gp, nil);
 			gfput(gp);
 			if(--sched.gcount == 0)
 				exit(0);
@@ -533,8 +545,8 @@ gosched(void)
 
 // The goroutine g is about to enter a system call.
 // Record that it's not using the cpu anymore.
-// This is called only from the go syscall library, not
-// from the low-level system calls used by the runtime.
+// This is called only from the go syscall library and cgocall,
+// not from the low-level system calls used by the runtime.
 void
 ·entersyscall(void)
 {
@@ -591,6 +603,28 @@ void
 	// When the scheduler takes g away from m,
 	// it will undo the sched.mcpu++ above.
 	gosched();
+}
+
+// Start scheduling g1 again for a cgo callback.
+void
+startcgocallback(G* g1)
+{
+	lock(&sched);
+	g1->status = Grunning;
+	sched.msyscall--;
+	sched.mcpu++;
+	unlock(&sched);
+}
+
+// Stop scheduling g1 after a cgo callback.
+void
+endcgocallback(G* g1)
+{
+	lock(&sched);
+	g1->status = Gsyscall;
+	sched.mcpu--;
+	sched.msyscall++;
+	unlock(&sched);
 }
 
 /*
@@ -669,6 +703,7 @@ oldstack(void)
 	uint32 args;
 	byte *sp;
 	G *g1;
+	static int32 goid;
 
 //printf("oldstack m->cret=%p\n", m->cret);
 
@@ -681,8 +716,10 @@ oldstack(void)
 		sp -= args;
 		mcpy(top->fp, sp, args);
 	}
+	goid = old.gobuf.g->goid;	// fault if g is bad, before gogo
 
-	stackfree((byte*)g1->stackguard - StackGuard);
+	if(old.free)
+		stackfree(g1->stackguard - StackGuard);
 	g1->stackbase = old.stackbase;
 	g1->stackguard = old.stackguard;
 
@@ -697,28 +734,47 @@ newstack(void)
 	byte *stk, *sp;
 	G *g1;
 	Gobuf label;
+	bool free;
 
 	frame = m->moreframe;
 	args = m->moreargs;
+	g1 = m->curg;
 
-	// Round up to align things nicely.
-	// This is sufficient for both 32- and 64-bit machines.
-	args = (args+7) & ~7;
 
-	if(frame < StackBig)
-		frame = StackBig;
-	frame += 1024;	// for more functions, Stktop.
-	stk = stackalloc(frame);
+	if(frame == 1 && args > 0 && m->morebuf.sp - sizeof(Stktop) - args - 32 > g1->stackguard) {
+		// special case: called from reflect.call (frame == 1)
+		// to call code with an arbitrary argument size,
+		// and we have enough space on the current stack.
+		// the new Stktop* is necessary to unwind, but
+		// we don't need to create a new segment.
+		top = (Stktop*)(m->morebuf.sp - sizeof(*top));
+		stk = g1->stackguard - StackGuard;
+		free = false;
+	} else {
+		// allocate new segment.
+		if(frame == 1)	// failed reflect.call hint
+			frame = 0;
+		frame += args;
+		if(frame < StackBig)
+			frame = StackBig;
+		frame += 1024;	// room for more functions, Stktop.
+		stk = stackalloc(frame);
+		top = (Stktop*)(stk+frame-sizeof(*top));
+		free = true;
+	}
 
 //printf("newstack frame=%d args=%d morepc=%p morefp=%p gobuf=%p, %p newstk=%p\n", frame, args, m->morepc, m->morefp, g->sched.pc, g->sched.sp, stk);
 
-	g1 = m->curg;
-	top = (Stktop*)(stk+frame-sizeof(*top));
 	top->stackbase = g1->stackbase;
 	top->stackguard = g1->stackguard;
 	top->gobuf = m->morebuf;
 	top->fp = m->morefp;
 	top->args = args;
+	top->free = free;
+	
+	// copy flag from panic
+	top->panic = g1->ispanic;
+	g1->ispanic = false;
 
 	g1->stackbase = (byte*)top;
 	g1->stackguard = stk + StackGuard;
@@ -746,10 +802,13 @@ malg(int32 stacksize)
 	byte *stk;
 
 	g = malloc(sizeof(G));
-	stk = stackalloc(stacksize + StackGuard);
-	g->stack0 = stk;
-	g->stackguard = stk + StackGuard;
-	g->stackbase = stk + StackGuard + stacksize;
+	if(stacksize >= 0) {
+		stk = stackalloc(stacksize + StackGuard);
+		g->stack0 = stk;
+		g->stackguard = stk + StackGuard;
+		g->stackbase = stk + StackGuard + stacksize - sizeof(Stktop);
+		runtime_memclr(g->stackbase, sizeof(Stktop));
+	}
 	return g;
 }
 
@@ -764,13 +823,20 @@ malg(int32 stacksize)
  */
 #pragma textflag 7
 void
-·newproc(int32 siz, byte* fn, byte* arg0)
+·newproc(int32 siz, byte* fn, ...)
 {
-	byte *stk, *sp;
+	newproc1(fn, (byte*)(&fn+1), siz, 0);
+}
+
+G*
+newproc1(byte *fn, byte *argp, int32 narg, int32 nret)
+{
+	byte *sp;
 	G *newg;
+	int32 siz;
 
-//printf("newproc siz=%d fn=%p", siz, fn);
-
+//printf("newproc1 %p %p narg=%d nret=%d\n", fn, argp, narg, nret);
+	siz = narg + nret;
 	siz = (siz+7) & ~7;
 	if(siz > 1024)
 		throw("runtime.newproc: too many args");
@@ -779,21 +845,18 @@ void
 
 	if((newg = gfget()) != nil){
 		newg->status = Gwaiting;
+		if(newg->stackguard - StackGuard != newg->stack0)
+			throw("invalid stack in newg");
 	} else {
 		newg = malg(4096);
 		newg->status = Gwaiting;
 		newg->alllink = allg;
 		allg = newg;
 	}
-	stk = newg->stack0;
 
-	newg->stackguard = stk+StackGuard;
-
-	sp = stk + 4096 - 4*8;
-	newg->stackbase = sp;
-
+	sp = newg->stackbase;
 	sp -= siz;
-	mcpy(sp, (byte*)&arg0, siz);
+	mcpy(sp, argp, narg);
 
 	newg->sched.sp = sp;
 	newg->sched.pc = (byte*)goexit;
@@ -807,23 +870,33 @@ void
 	newprocreadylocked(newg);
 	unlock(&sched);
 
+	return newg;
 //printf(" goid=%d\n", newg->goid);
 }
 
 #pragma textflag 7
-void
-·deferproc(int32 siz, byte* fn, byte* arg0)
+uintptr
+·deferproc(int32 siz, byte* fn, ...)
 {
 	Defer *d;
 
 	d = malloc(sizeof(*d) + siz - sizeof(d->args));
 	d->fn = fn;
-	d->sp = (byte*)&arg0;
+	d->sp = (byte*)(&fn+1);
 	d->siz = siz;
+	d->pc = ·getcallerpc(&siz);
 	mcpy(d->args, d->sp, d->siz);
 
 	d->link = g->defer;
 	g->defer = d;
+	
+	// deferproc returns 0 normally.
+	// a deferred func that stops a panic
+	// makes the deferproc return 1.
+	// the code the compiler generates always
+	// checks the return value and jumps to the
+	// end of the function if deferproc returns != 0.
+	return 0;
 }
 
 #pragma textflag 7
@@ -836,7 +909,7 @@ void
 	d = g->defer;
 	if(d == nil)
 		return;
-	sp = (byte*)&arg0;
+	sp = getcallersp(&arg0);
 	if(d->sp != sp)
 		return;
 	mcpy(d->sp, d->args, d->siz);
@@ -844,7 +917,195 @@ void
 	fn = d->fn;
 	free(d);
 	jmpdefer(fn, sp);
-  }
+}
+
+static void
+rundefer(void)
+{	
+	Defer *d;
+	
+	while((d = g->defer) != nil) {
+		g->defer = d->link;
+		reflect·call(d->fn, d->args, d->siz);
+		free(d);
+	}
+}
+
+// Free stack frames until we hit the last one
+// or until we find the one that contains the sp.
+static void
+unwindstack(G *gp, byte *sp)
+{
+	Stktop *top;
+	byte *stk;
+	
+	// Must be called from a different goroutine, usually m->g0.
+	if(g == gp)
+		throw("unwindstack on self");
+
+	while((top = (Stktop*)gp->stackbase) != nil && top->stackbase != nil) {
+		stk = gp->stackguard - StackGuard;
+		if(stk <= sp && sp < gp->stackbase)
+			break;
+		gp->stackbase = top->stackbase;
+		gp->stackguard = top->stackguard;
+		free(stk);
+	}
+
+	if(sp != nil && (sp < gp->stackguard - StackGuard || gp->stackbase < sp)) {
+		printf("recover: %p not in [%p, %p]\n", sp, gp->stackguard - StackGuard, gp->stackbase);
+		throw("bad unwindstack");
+	}
+}
+
+static void
+printpanics(Panic *p)
+{
+	if(p->link) {
+		printpanics(p->link);
+		printf("\t");
+	}
+	printf("panic: ");
+	·printany(p->arg);
+	if(p->recovered)
+		printf(" [recovered]");
+	printf("\n");
+}
+	
+void
+·panic(Eface e)
+{
+	Defer *d;
+	Panic *p;
+
+	p = mal(sizeof *p);
+	p->arg = e;
+	p->link = g->panic;
+	p->stackbase = g->stackbase;
+	g->panic = p;
+
+	for(;;) {
+		d = g->defer;
+		if(d == nil)
+			break;
+		// take defer off list in case of recursive panic
+		g->defer = d->link;
+		g->ispanic = true;	// rock for newstack, where reflect.call ends up
+		reflect·call(d->fn, d->args, d->siz);
+		if(p->recovered) {
+			g->panic = p->link;
+			free(p);
+			// put recovering defer back on list
+			// for scheduler to find.
+			d->link = g->defer;
+			g->defer = d;
+			g->status = Grecovery;
+			gosched();
+			throw("recovery failed"); // gosched should not return
+		}
+		free(d);
+	}
+
+	// ran out of deferred calls - old-school panic now
+	fd = 2;
+	printpanics(g->panic);
+	panic(0);
+}
+
+#pragma textflag 7	/* no split, or else g->stackguard is not the stack for fp */
+void
+·recover(byte *fp, Eface ret)
+{
+	Stktop *top, *oldtop;
+	Panic *p;
+
+	fp = getcallersp(fp);
+
+	// Must be a panic going on.
+	if((p = g->panic) == nil || p->recovered)
+		goto nomatch;
+
+	// Frame must be at the top of the stack segment,
+	// because each deferred call starts a new stack
+	// segment as a side effect of using reflect.call.
+	// (There has to be some way to remember the
+	// variable argument frame size, and the segment
+	// code already takes care of that for us, so we
+	// reuse it.)
+	//
+	// As usual closures complicate things: the fp that
+	// the closure implementation function claims to have
+	// is where the explicit arguments start, after the
+	// implicit pointer arguments and PC slot.
+	// If we're on the first new segment for a closure,
+	// then fp == top - top->args is correct, but if
+	// the closure has its own big argument frame and
+	// allocated a second segment (see below),
+	// the fp is slightly above top - top->args.
+	// That condition can't happen normally though
+	// (stack pointer go down, not up), so we can accept
+	// any fp between top and top - top->args as
+	// indicating the top of the segment.
+	top = (Stktop*)g->stackbase;
+	if(fp < (byte*)top - top->args || (byte*)top < fp)
+		goto nomatch;
+
+	// The deferred call makes a new segment big enough
+	// for the argument frame but not necessarily big
+	// enough for the function's local frame (size unknown
+	// at the time of the call), so the function might have
+	// made its own segment immediately.  If that's the
+	// case, back top up to the older one, the one that
+	// reflect.call would have made for the panic.
+	//
+	// The fp comparison here checks that the argument
+	// frame that was copied during the split (the top->args
+	// bytes above top->fp) abuts the old top of stack.
+	// This is a correct test for both closure and non-closure code.
+	oldtop = (Stktop*)top->stackbase;
+	if(oldtop != nil && top->fp == (byte*)oldtop - top->args)
+		top = oldtop;
+
+	// Now we have the segment that was created to
+	// run this call.  It must have been marked as a panic segment.
+	if(!top->panic)
+		goto nomatch;
+
+	// Okay, this is the top frame of a deferred call
+	// in response to a panic.  It can see the panic argument.
+	p->recovered = 1;
+	ret = p->arg;
+	FLUSH(&ret);
+	return;
+
+nomatch:
+	ret.type = nil;
+	ret.data = nil;
+	FLUSH(&ret);
+}
+
+
+// Put on gfree list.  Sched must be locked.
+static void
+gfput(G *g)
+{
+	if(g->stackguard - StackGuard != g->stack0)
+		throw("invalid stack in gfput");
+	g->schedlink = sched.gfree;
+	sched.gfree = g;
+}
+
+// Get from gfree list.  Sched must be locked.
+static G*
+gfget(void)
+{
+	G *g;
+
+	g = sched.gfree;
+	if(g)
+		sched.gfree = g->schedlink;
+	return g;
+}
 
 void
 ·Breakpoint(void)
@@ -855,6 +1116,7 @@ void
 void
 ·Goexit(void)
 {
+	rundefer();
 	goexit();
 }
 
@@ -883,13 +1145,14 @@ void
 	lock(&sched);
 	sched.gomaxprocs = n;
 	sched.mcpumax = n;
-	// handle fewer procs
-	while(sched.mcpu > sched.mcpumax) {
-		noteclear(&sched.stopped);
-		sched.waitstop = 1;
+	// handle fewer procs?
+	if(sched.mcpu > sched.mcpumax) {
 		unlock(&sched);
-		notesleep(&sched.stopped);
-		lock(&sched);
+		// just give up the cpu.
+		// we'll only get rescheduled once the
+		// number has come down.
+		gosched();
+		return;
 	}
 	// handle more procs
 	matchmg();

@@ -147,16 +147,34 @@ func (doc *docReader) addValue(decl *ast.GenDecl) {
 }
 
 
+// Helper function to set the table entry for function f. Makes sure that
+// at least one f with associated documentation is stored in table, if there
+// are multiple f's with the same name.
+func setFunc(table map[string]*ast.FuncDecl, f *ast.FuncDecl) {
+	name := f.Name.Name()
+	if g, exists := table[name]; exists && g.Doc != nil {
+		// a function with the same name has already been registered;
+		// since it has documentation, assume f is simply another
+		// implementation and ignore it
+		// TODO(gri) consider collecting all functions, or at least
+		//           all comments
+		return
+	}
+	// function doesn't exist or has no documentation; use f
+	table[name] = f
+}
+
+
 func (doc *docReader) addFunc(fun *ast.FuncDecl) {
 	name := fun.Name.Name()
 
 	// determine if it should be associated with a type
 	if fun.Recv != nil {
 		// method
-		typ := doc.lookupTypeDoc(baseTypeName(fun.Recv.Type))
+		typ := doc.lookupTypeDoc(baseTypeName(fun.Recv.List[0].Type))
 		if typ != nil {
 			// exported receiver type
-			typ.methods[name] = fun
+			setFunc(typ.methods, fun)
 		}
 		// otherwise don't show the method
 		// TODO(gri): There may be exported methods of non-exported types
@@ -168,8 +186,8 @@ func (doc *docReader) addFunc(fun *ast.FuncDecl) {
 
 	// perhaps a factory function
 	// determine result type, if any
-	if len(fun.Type.Results) >= 1 {
-		res := fun.Type.Results[0]
+	if fun.Type.Results.NumFields() >= 1 {
+		res := fun.Type.Results.List[0]
 		if len(res.Names) <= 1 {
 			// exactly one (named or anonymous) result associated
 			// with the first type in result signature (there may
@@ -187,18 +205,18 @@ func (doc *docReader) addFunc(fun *ast.FuncDecl) {
 				if doc.pkgName == "os" && tname == "Error" &&
 					name != "NewError" && name != "NewSyscallError" {
 					// not a factory function for os.Error
-					doc.funcs[name] = fun // treat as ordinary function
+					setFunc(doc.funcs, fun) // treat as ordinary function
 					return
 				}
 
-				typ.factories[name] = fun
+				setFunc(typ.factories, fun)
 				return
 			}
 		}
 	}
 
 	// ordinary function
-	doc.funcs[name] = fun
+	setFunc(doc.funcs, fun)
 }
 
 
@@ -272,16 +290,15 @@ func (doc *docReader) addFile(src *ast.File) {
 	}
 
 	// collect BUG(...) comments
-	for c := src.Comments; c != nil; c = c.Next {
+	for _, c := range src.Comments {
 		text := c.List[0].Text
-		cstr := string(text)
-		if m := bug_markers.ExecuteString(cstr); len(m) > 0 {
+		if m := bug_markers.Execute(text); len(m) > 0 {
 			// found a BUG comment; maybe empty
-			if bstr := cstr[m[1]:]; bug_content.MatchString(bstr) {
+			if btxt := text[m[1]:]; bug_content.Match(btxt) {
 				// non-empty BUG comment; collect comment without BUG prefix
 				list := copyCommentList(c.List)
 				list[0].Text = text[m[1]:]
-				doc.bugs.Push(&ast.CommentGroup{list, nil})
+				doc.bugs.Push(&ast.CommentGroup{list})
 			}
 		}
 	}
@@ -293,7 +310,7 @@ func NewFileDoc(file *ast.File) *PackageDoc {
 	var r docReader
 	r.init(file.Name.Name())
 	r.addFile(file)
-	return r.newDoc("", "", nil)
+	return r.newDoc("", nil)
 }
 
 
@@ -307,7 +324,7 @@ func NewPackageDoc(pkg *ast.Package, importpath string) *PackageDoc {
 		filenames[i] = filename
 		i++
 	}
-	return r.newDoc(importpath, pkg.Path, filenames)
+	return r.newDoc(importpath, filenames)
 }
 
 
@@ -398,7 +415,7 @@ func makeFuncDocs(m map[string]*ast.FuncDecl) []*FuncDoc {
 		doc.Doc = CommentText(f.Doc)
 		f.Doc = nil // doc consumed - remove from ast.FuncDecl node
 		if f.Recv != nil {
-			doc.Recv = f.Recv.Type
+			doc.Recv = f.Recv.List[0].Type
 		}
 		doc.Name = f.Name.Name()
 		doc.Decl = f
@@ -511,7 +528,6 @@ func makeBugDocs(v *vector.Vector) []string {
 type PackageDoc struct {
 	PackageName string
 	ImportPath  string
-	FilePath    string
 	Filenames   []string
 	Doc         string
 	Consts      []*ValueDoc
@@ -524,11 +540,10 @@ type PackageDoc struct {
 
 // newDoc returns the accumulated documentation for the package.
 //
-func (doc *docReader) newDoc(importpath, filepath string, filenames []string) *PackageDoc {
+func (doc *docReader) newDoc(importpath string, filenames []string) *PackageDoc {
 	p := new(PackageDoc)
 	p.PackageName = doc.pkgName
 	p.ImportPath = importpath
-	p.FilePath = filepath
 	sort.SortStrings(filenames)
 	p.Filenames = filenames
 	p.Doc = CommentText(doc.doc)
@@ -547,46 +562,20 @@ func (doc *docReader) newDoc(importpath, filepath string, filenames []string) *P
 // ----------------------------------------------------------------------------
 // Filtering by name
 
-// Does s look like a regular expression?
-func isRegexp(s string) bool {
-	metachars := ".(|)*+?^$[]"
-	for _, c := range s {
-		for _, m := range metachars {
-			if c == m {
-				return true
-			}
-		}
-	}
-	return false
-}
+type Filter func(string) bool
 
 
-func match(s string, names []string) bool {
-	for _, t := range names {
-		if isRegexp(t) {
-			if matched, _ := regexp.MatchString(t, s); matched {
-				return true
-			}
-		}
-		if s == t {
-			return true
-		}
-	}
-	return false
-}
-
-
-func matchDecl(d *ast.GenDecl, names []string) bool {
+func matchDecl(d *ast.GenDecl, f Filter) bool {
 	for _, d := range d.Specs {
 		switch v := d.(type) {
 		case *ast.ValueSpec:
 			for _, name := range v.Names {
-				if match(name.Name(), names) {
+				if f(name.Name()) {
 					return true
 				}
 			}
 		case *ast.TypeSpec:
-			if match(v.Name.Name(), names) {
+			if f(v.Name.Name()) {
 				return true
 			}
 		}
@@ -595,10 +584,10 @@ func matchDecl(d *ast.GenDecl, names []string) bool {
 }
 
 
-func filterValueDocs(a []*ValueDoc, names []string) []*ValueDoc {
+func filterValueDocs(a []*ValueDoc, f Filter) []*ValueDoc {
 	w := 0
 	for _, vd := range a {
-		if matchDecl(vd.Decl, names) {
+		if matchDecl(vd.Decl, f) {
 			a[w] = vd
 			w++
 		}
@@ -607,10 +596,10 @@ func filterValueDocs(a []*ValueDoc, names []string) []*ValueDoc {
 }
 
 
-func filterFuncDocs(a []*FuncDoc, names []string) []*FuncDoc {
+func filterFuncDocs(a []*FuncDoc, f Filter) []*FuncDoc {
 	w := 0
 	for _, fd := range a {
-		if match(fd.Name, names) {
+		if f(fd.Name) {
 			a[w] = fd
 			w++
 		}
@@ -619,18 +608,18 @@ func filterFuncDocs(a []*FuncDoc, names []string) []*FuncDoc {
 }
 
 
-func filterTypeDocs(a []*TypeDoc, names []string) []*TypeDoc {
+func filterTypeDocs(a []*TypeDoc, f Filter) []*TypeDoc {
 	w := 0
 	for _, td := range a {
 		n := 0 // number of matches
-		if matchDecl(td.Decl, names) {
+		if matchDecl(td.Decl, f) {
 			n = 1
 		} else {
 			// type name doesn't match, but we may have matching consts, vars, factories or methods
-			td.Consts = filterValueDocs(td.Consts, names)
-			td.Vars = filterValueDocs(td.Vars, names)
-			td.Factories = filterFuncDocs(td.Factories, names)
-			td.Methods = filterFuncDocs(td.Methods, names)
+			td.Consts = filterValueDocs(td.Consts, f)
+			td.Vars = filterValueDocs(td.Vars, f)
+			td.Factories = filterFuncDocs(td.Factories, f)
+			td.Methods = filterFuncDocs(td.Methods, f)
 			n += len(td.Consts) + len(td.Vars) + len(td.Factories) + len(td.Methods)
 		}
 		if n > 0 {
@@ -642,15 +631,13 @@ func filterTypeDocs(a []*TypeDoc, names []string) []*TypeDoc {
 }
 
 
-// Filter eliminates information from d that is not
-// about one of the given names.
+// Filter eliminates documentation for names that don't pass through the filter f.
 // TODO: Recognize "Type.Method" as a name.
-// TODO(r): maybe precompile the regexps.
 //
-func (p *PackageDoc) Filter(names []string) {
-	p.Consts = filterValueDocs(p.Consts, names)
-	p.Vars = filterValueDocs(p.Vars, names)
-	p.Types = filterTypeDocs(p.Types, names)
-	p.Funcs = filterFuncDocs(p.Funcs, names)
+func (p *PackageDoc) Filter(f Filter) {
+	p.Consts = filterValueDocs(p.Consts, f)
+	p.Vars = filterValueDocs(p.Vars, f)
+	p.Types = filterTypeDocs(p.Types, f)
+	p.Funcs = filterFuncDocs(p.Funcs, f)
 	p.Doc = "" // don't show top-level package doc
 }

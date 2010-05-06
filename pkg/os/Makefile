@@ -15,8 +15,29 @@ GOFILES=\
 	path.go\
 	proc.go\
 	stat_$(GOOS).go\
-	sys_$(GOOS).go\
 	time.go\
 	types.go\
+
+GOFILES_freebsd=\
+	file_unix.go\
+	sys_bsd.go\
+
+GOFILES_darwin=\
+	file_unix.go\
+	sys_bsd.go\
+
+GOFILES_linux=\
+	file_unix.go\
+	sys_linux.go\
+
+GOFILES_nacl=\
+	file_unix.go\
+	sys_nacl.go\
+
+GOFILES_windows=\
+	file_windows.go\
+	sys_windows.go\
+
+GOFILES+=$(GOFILES_$(GOOS))
 
 include ../../Make.pkg

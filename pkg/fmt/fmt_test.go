@@ -7,8 +7,8 @@ package fmt_test
 import (
 	. "fmt"
 	"io"
-	"malloc" // for the malloc count test only
 	"math"
+	"runtime" // for the malloc count test only
 	"strings"
 	"testing"
 )
@@ -66,12 +66,12 @@ var fmttests = []fmtTest{
 	fmtTest{"%q", "abc", `"abc"`},
 
 	// basic bytes
-	fmtTest{"%s", strings.Bytes("abc"), "abc"},
-	fmtTest{"%x", strings.Bytes("abc"), "616263"},
-	fmtTest{"% x", strings.Bytes("abc"), "61 62 63"},
-	fmtTest{"%x", strings.Bytes("xyz"), "78797a"},
-	fmtTest{"%X", strings.Bytes("xyz"), "78797A"},
-	fmtTest{"%q", strings.Bytes("abc"), `"abc"`},
+	fmtTest{"%s", []byte("abc"), "abc"},
+	fmtTest{"%x", []byte("abc"), "616263"},
+	fmtTest{"% x", []byte("abc"), "61 62 63"},
+	fmtTest{"%x", []byte("xyz"), "78797a"},
+	fmtTest{"%X", []byte("xyz"), "78797A"},
+	fmtTest{"%q", []byte("abc"), `"abc"`},
 
 	// escaped strings
 	fmtTest{"%#q", `abc`, "`abc`"},
@@ -86,6 +86,7 @@ var fmttests = []fmtTest{
 
 	// width
 	fmtTest{"%5s", "abc", "  abc"},
+	fmtTest{"%2s", "\u263a", " \u263a"},
 	fmtTest{"%-5s", "abc", "abc  "},
 	fmtTest{"%05s", "abc", "00abc"},
 
@@ -118,6 +119,26 @@ var fmttests = []fmtTest{
 	fmtTest{"% .3g", -1.0, "-1"},
 	fmtTest{"% .3g", 1.0, " 1"},
 
+	// complex values
+	fmtTest{"%+.3e", 0i, "(+0.000e+00+0.000e+00i)"},
+	fmtTest{"%+.3f", 0i, "(+0.000+0.000i)"},
+	fmtTest{"%+.3g", 0i, "(+0+0i)"},
+	fmtTest{"%+.3e", 1 + 2i, "(+1.000e+00+2.000e+00i)"},
+	fmtTest{"%+.3f", 1 + 2i, "(+1.000+2.000i)"},
+	fmtTest{"%+.3g", 1 + 2i, "(+1+2i)"},
+	fmtTest{"%.3e", 0i, "(0.000e+00+0.000e+00i)"},
+	fmtTest{"%.3f", 0i, "(0.000+0.000i)"},
+	fmtTest{"%.3g", 0i, "(0+0i)"},
+	fmtTest{"%.3e", 1 + 2i, "(1.000e+00+2.000e+00i)"},
+	fmtTest{"%.3f", 1 + 2i, "(1.000+2.000i)"},
+	fmtTest{"%.3g", 1 + 2i, "(1+2i)"},
+	fmtTest{"%.3e", -1 - 2i, "(-1.000e+00-2.000e+00i)"},
+	fmtTest{"%.3f", -1 - 2i, "(-1.000-2.000i)"},
+	fmtTest{"%.3g", -1 - 2i, "(-1-2i)"},
+	fmtTest{"% .3E", -1 - 2i, "(-1.000E+00-2.000E+00i)"},
+	fmtTest{"%+.3g", complex64(1 + 2i), "(+1+2i)"},
+	fmtTest{"%+.3g", complex128(1 + 2i), "(+1+2i)"},
+
 	// erroneous formats
 	fmtTest{"", 2, "?(extra int=2)"},
 	fmtTest{"%d", "hello", "%d(string=hello)"},
@@ -141,6 +162,7 @@ var fmttests = []fmtTest{
 	fmtTest{"%x", b64, "ffffffffffffffff"},
 	fmtTest{"%b", 7, "111"},
 	fmtTest{"%b", b64, "1111111111111111111111111111111111111111111111111111111111111111"},
+	fmtTest{"%b", -6, "-110"},
 	fmtTest{"%e", float64(1), "1.000000e+00"},
 	fmtTest{"%e", float64(1234.5678e3), "1.234568e+06"},
 	fmtTest{"%e", float64(1234.5678e-8), "1.234568e-05"},
@@ -209,6 +231,11 @@ var fmttests = []fmtTest{
 	fmtTest{"%v", &array, "&[1 2 3 4 5]"},
 	fmtTest{"%v", &iarray, "&[1 hello 2.5 <nil>]"},
 
+	// complexes with %v
+	fmtTest{"%v", 1 + 2i, "(1+2i)"},
+	fmtTest{"%v", complex64(1 + 2i), "(1+2i)"},
+	fmtTest{"%v", complex128(1 + 2i), "(1+2i)"},
+
 	// structs
 	fmtTest{"%v", A{1, 2, "a", []int{1, 2}}, `{1 2 a [1 2]}`},
 	fmtTest{"%+v", A{1, 2, "a", []int{1, 2}}, `{i:1 j:2 s:a x:[1 2]}`},
@@ -216,6 +243,9 @@ var fmttests = []fmtTest{
 	// +v on structs with Stringable items
 	fmtTest{"%+v", B{1, 2}, `{i:<1> j:2}`},
 	fmtTest{"%+v", C{1, B{2, 3}}, `{i:1 B:{i:<2> j:3}}`},
+
+	// q on Stringable items
+	fmtTest{"%q", I(23), `"<23>"`},
 
 	// %p on non-pointers
 	fmtTest{"%p", make(chan int), "PTR"},
@@ -229,6 +259,12 @@ var fmttests = []fmtTest{
 	fmtTest{"%#v", make(chan int), "(chan int)(PTR)"},
 	fmtTest{"%#v", uint64(1<<64 - 1), "0xffffffffffffffff"},
 	fmtTest{"%#v", 1000000000, "1000000000"},
+
+	// erroneous things
+	fmtTest{"%d", "hello", "%d(string=hello)"},
+	fmtTest{"no args", "hello", "no args?(extra string=hello)"},
+	fmtTest{"%s", nil, "%s(<nil>)"},
+	fmtTest{"%T", nil, "<nil>"},
 }
 
 func TestSprintf(t *testing.T) {
@@ -281,29 +317,29 @@ func BenchmarkSprintfIntInt(b *testing.B) {
 }
 
 func TestCountMallocs(t *testing.T) {
-	mallocs := 0 - malloc.GetStats().Mallocs
+	mallocs := 0 - runtime.MemStats.Mallocs
 	for i := 0; i < 100; i++ {
 		Sprintf("")
 	}
-	mallocs += malloc.GetStats().Mallocs
+	mallocs += runtime.MemStats.Mallocs
 	Printf("mallocs per Sprintf(\"\"): %d\n", mallocs/100)
-	mallocs = 0 - malloc.GetStats().Mallocs
+	mallocs = 0 - runtime.MemStats.Mallocs
 	for i := 0; i < 100; i++ {
 		Sprintf("xxx")
 	}
-	mallocs += malloc.GetStats().Mallocs
+	mallocs += runtime.MemStats.Mallocs
 	Printf("mallocs per Sprintf(\"xxx\"): %d\n", mallocs/100)
-	mallocs = 0 - malloc.GetStats().Mallocs
+	mallocs = 0 - runtime.MemStats.Mallocs
 	for i := 0; i < 100; i++ {
 		Sprintf("%x", i)
 	}
-	mallocs += malloc.GetStats().Mallocs
+	mallocs += runtime.MemStats.Mallocs
 	Printf("mallocs per Sprintf(\"%%x\"): %d\n", mallocs/100)
-	mallocs = 0 - malloc.GetStats().Mallocs
+	mallocs = 0 - runtime.MemStats.Mallocs
 	for i := 0; i < 100; i++ {
 		Sprintf("%x %x", i, i)
 	}
-	mallocs += malloc.GetStats().Mallocs
+	mallocs += runtime.MemStats.Mallocs
 	Printf("mallocs per Sprintf(\"%%x %%x\"): %d\n", mallocs/100)
 }
 

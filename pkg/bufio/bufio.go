@@ -75,7 +75,7 @@ func NewReader(rd io.Reader) *Reader {
 	b, err := NewReaderSize(rd, defaultBufSize)
 	if err != nil {
 		// cannot happen - defaultBufSize is a valid size
-		panic("bufio: NewReader: ", err.String())
+		panic(err)
 	}
 	return b
 }
@@ -353,7 +353,7 @@ func NewWriter(wr io.Writer) *Writer {
 	b, err := NewWriterSize(wr, defaultBufSize)
 	if err != nil {
 		// cannot happen - defaultBufSize is valid size
-		panic("bufio: NewWriter: ", err.String())
+		panic(err)
 	}
 	return b
 }
@@ -435,6 +435,35 @@ func (b *Writer) WriteByte(c byte) os.Error {
 	b.buf[b.n] = c
 	b.n++
 	return nil
+}
+
+// WriteRune writes a single Unicode code point, returning
+// the number of bytes written and any error.
+func (b *Writer) WriteRune(rune int) (size int, err os.Error) {
+	if rune < utf8.RuneSelf {
+		err = b.WriteByte(byte(rune))
+		if err != nil {
+			return 0, err
+		}
+		return 1, nil
+	}
+	if b.err != nil {
+		return 0, b.err
+	}
+	n := b.Available()
+	if n < utf8.UTFMax {
+		if b.Flush(); b.err != nil {
+			return 0, b.err
+		}
+		n = b.Available()
+		if n < utf8.UTFMax {
+			// Can only happen if buffer is silly small.
+			return b.WriteString(string(rune))
+		}
+	}
+	size = utf8.EncodeRune(rune, b.buf[b.n:])
+	b.n += size
+	return size, nil
 }
 
 // WriteString writes a string.

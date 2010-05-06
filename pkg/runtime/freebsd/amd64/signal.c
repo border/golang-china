@@ -56,7 +56,36 @@ void
 sighandler(int32 sig, Siginfo* info, void* context)
 {
 	Ucontext *uc;
-	Mcontext *mc;
+	Mcontext *r;
+	G *gp;
+	uintptr *sp;
+
+	uc = context;
+	r = &uc->uc_mcontext;
+
+	if((gp = m->curg) != nil && (sigtab[sig].flags & SigPanic)) {
+		// Make it look like a call to the signal func.
+		// Have to pass arguments out of band since
+		// augmenting the stack frame would break
+		// the unwinding code.
+		gp->sig = sig;
+		gp->sigcode0 = info->si_code;
+		gp->sigcode1 = (uintptr)info->si_addr;
+
+		// Only push sigpanic if r->mc_rip != 0.
+		// If r->mc_rip == 0, probably panicked because of a
+		// call to a nil func.  Not pushing that onto sp will
+		// make the trace look like a call to sigpanic instead.
+		// (Otherwise the trace will end at sigpanic and we
+		// won't get to see who faulted.)
+		if(r->mc_rip != 0) {
+			sp = (uintptr*)r->mc_rsp;
+			*--sp = r->mc_rip;
+			r->mc_rsp = (uintptr)sp;
+		}
+		r->mc_rip = (uintptr)sigpanic;
+		return;
+	}
 
 	if(sigtab[sig].flags & SigQueue) {
 		if(sigsend(sig) || (sigtab[sig].flags & SigIgnore))
@@ -68,22 +97,18 @@ sighandler(int32 sig, Siginfo* info, void* context)
 		exit(2);
 	panicking = 1;
 
-	uc = context;
-	mc = &uc->uc_mcontext;
-
 	if(sig < 0 || sig >= NSIG)
 		printf("Signal %d\n", sig);
 	else
 		printf("%s\n", sigtab[sig].name);
 
-	printf("Faulting address: %p\n", info->si_addr);
-	printf("PC=%X\n", mc->mc_rip);
+	printf("PC=%X\n", r->mc_rip);
 	printf("\n");
 
 	if(gotraceback()){
-		traceback((void*)mc->mc_rip, (void*)mc->mc_rsp, (void*)mc->mc_r15);
-		tracebackothers((void*)mc->mc_r15);
-		dumpregs(mc);
+		traceback((void*)r->mc_rip, (void*)r->mc_rsp, 0, (void*)r->mc_r15);
+		tracebackothers((void*)r->mc_r15);
+		dumpregs(r);
 	}
 
 	breakpoint();

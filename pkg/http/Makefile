@@ -8,12 +8,15 @@ TARG=http
 GOFILES=\
 	chunked.go\
 	client.go\
+	dump.go\
 	fs.go\
 	lex.go\
+	persist.go\
 	request.go\
 	response.go\
 	server.go\
 	status.go\
+	transfer.go\
 	url.go\
 
 include ../../Make.pkg

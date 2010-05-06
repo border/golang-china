@@ -79,6 +79,21 @@ type FloatType struct {
 	commonType
 }
 
+// Complex64Type represents a complex64 type.
+type Complex64Type struct {
+	commonType
+}
+
+// Complex128Type represents a complex128 type.
+type Complex128Type struct {
+	commonType
+}
+
+// ComplexType represents a complex type.
+type ComplexType struct {
+	commonType
+}
+
 // Int16Type represents an int16 type.
 type Int16Type struct {
 	commonType
@@ -492,10 +507,10 @@ func (t *StructType) FieldByIndex(index []int) (f StructField) {
 
 const inf = 1 << 30 // infinity - no struct has that many nesting levels
 
-func (t *StructType) fieldByName(name string, mark map[*StructType]bool, depth int) (ff StructField, fd int) {
+func (t *StructType) fieldByNameFunc(match func(string) bool, mark map[*StructType]bool, depth int) (ff StructField, fd int) {
 	fd = inf // field depth
 
-	if _, marked := mark[t]; marked {
+	if mark[t] {
 		// Struct already seen.
 		return
 	}
@@ -507,7 +522,7 @@ L: for i, _ := range t.fields {
 		f := t.Field(i)
 		d := inf
 		switch {
-		case f.Name == name:
+		case match(f.Name):
 			// Matching top-level field.
 			d = depth
 		case f.Anonymous:
@@ -516,13 +531,13 @@ L: for i, _ := range t.fields {
 				ft = pt.Elem()
 			}
 			switch {
-			case ft.Name() == name:
+			case match(ft.Name()):
 				// Matching anonymous top-level field.
 				d = depth
 			case fd > depth:
 				// No top-level field yet; look inside nested structs.
 				if st, ok := ft.(*StructType); ok {
-					f, d = st.fieldByName(name, mark, depth+1)
+					f, d = st.fieldByNameFunc(match, mark, depth+1)
 				}
 			}
 		}
@@ -561,7 +576,13 @@ L: for i, _ := range t.fields {
 // FieldByName returns the struct field with the given name
 // and a boolean to indicate if the field was found.
 func (t *StructType) FieldByName(name string) (f StructField, present bool) {
-	if ff, fd := t.fieldByName(name, make(map[*StructType]bool), 0); fd < inf {
+	return t.FieldByNameFunc(func(s string) bool { return s == name })
+}
+
+// FieldByNameFunc returns the struct field with a name that satisfies the
+// match function and a boolean to indicate if the field was found.
+func (t *StructType) FieldByNameFunc(match func(string) bool) (f StructField, present bool) {
+	if ff, fd := t.fieldByNameFunc(match, make(map[*StructType]bool), 0); fd < inf {
 		ff.Index = ff.Index[0 : fd+1]
 		f, present = ff, true
 	}
@@ -585,6 +606,12 @@ func toType(i interface{}) Type {
 		return (*Float32Type)(unsafe.Pointer(v))
 	case *runtime.Float64Type:
 		return (*Float64Type)(unsafe.Pointer(v))
+	case *runtime.ComplexType:
+		return (*ComplexType)(unsafe.Pointer(v))
+	case *runtime.Complex64Type:
+		return (*Complex64Type)(unsafe.Pointer(v))
+	case *runtime.Complex128Type:
+		return (*Complex128Type)(unsafe.Pointer(v))
 	case *runtime.IntType:
 		return (*IntType)(unsafe.Pointer(v))
 	case *runtime.Int8Type:
@@ -628,7 +655,7 @@ func toType(i interface{}) Type {
 	case *runtime.StructType:
 		return (*StructType)(unsafe.Pointer(v))
 	}
-	panicln("toType", i)
+	panic("toType")
 }
 
 // ArrayOrSliceType is the common interface implemented

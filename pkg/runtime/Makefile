@@ -17,15 +17,20 @@ CFLAGS_64=-D_64BIT
 # TODO(kaib): fix register allocation to honor extern register so we
 # can enable optimizations again.
 CFLAGS_arm=-N
-CFLAGS_mingw=-D__MINGW__
-CFLAGS=-I$(GOOS) -I$(GOOS)/$(GOARCH) -wF $(CFLAGS_$(SIZE)) $(CFLAGS_$(GOARCH)) $(CFLAGS_$(GOOS))
+CFLAGS_windows=-D__WINDOWS__
+CFLAGS=-I$(GOOS) -I$(GOARCH) -I$(GOOS)/$(GOARCH) -wF $(CFLAGS_$(SIZE)) $(CFLAGS_$(GOARCH)) $(CFLAGS_$(GOOS))
 
 GOFILES=\
+	error.go\
 	extern.go\
 	type.go\
+	version.go\
 
 GOFILES_pchw=\
 	pchw/io.go\
+
+OFILES_windows=\
+	syscall.$O\
 
 # 386-specific object files
 OFILES_386=\
@@ -48,6 +53,7 @@ OFILES=\
 	chan.$O\
 	closure.$O\
 	float.$O\
+	complex.$O\
 	hashmap.$O\
 	iface.$O\
 	malloc.$O\
@@ -55,10 +61,12 @@ OFILES=\
 	mcentral.$O\
 	mem.$O\
 	memmove.$O\
+	mfinal.$O\
 	mfixalloc.$O\
 	mgc0.$O\
 	mheap.$O\
 	mheapmap$(SIZE).$O\
+	mprof.$O\
 	msize.$O\
 	print.$O\
 	proc.$O\
@@ -91,25 +99,38 @@ HFILES=\
 
 GOFILES+=$(GOFILES_$(GOOS))
 
+# For use by cgo.
+INSTALLFILES=$(pkgdir)/runtime.h $(pkgdir)/cgocall.h
+
 # special, out of the way compiler flag that means "add runtime metadata to output"
 GC+= -+
 
 include ../../Make.pkg
 
+$(pkgdir)/%.h: %.h
+	@test -d $(QUOTED_GOROOT)/pkg && mkdir -p $(pkgdir)
+	cp $< $@
+
 clean: clean-local
 
 clean-local:
-	rm -f cgo2c */asm.h runtime.acid.*
+	rm -f goc2c mkversion version.go */asm.h runtime.acid.*
 
 $(GOARCH)/asm.h: mkasmh.sh runtime.acid.$(GOARCH)
 	./mkasmh.sh >$@.x
 	mv -f $@.x $@
 
-cgo2c: cgo2c.c
+goc2c: goc2c.c
 	$(QUOTED_GOBIN)/quietgcc -o $@ $<
 
-%.c:	%.cgo cgo2c
-	./cgo2c $< > $@.tmp
+mkversion: mkversion.c
+	$(QUOTED_GOBIN)/quietgcc -o $@ -I "$(GOROOT)/include" $< "$(GOROOT)/lib/lib9.a"
+
+version.go: mkversion
+	./mkversion >version.go
+
+%.c:	%.goc goc2c
+	./goc2c $< > $@.tmp
 	mv -f $@.tmp $@
 
 %.$O:	$(GOARCH)/%.c
@@ -130,3 +151,15 @@ cgo2c: cgo2c.c
 # for discovering offsets inside structs when debugging
 runtime.acid.$(GOARCH): runtime.h proc.c
 	$(QUOTED_GOBIN)/$(CC) $(CFLAGS) -a proc.c >$@
+
+# 386 traceback is really amd64 traceback
+ifeq ($(GOARCH),386)
+traceback.$O:	amd64/traceback.c
+	$(QUOTED_GOBIN)/$(CC) $(CFLAGS) $<
+endif
+
+# NaCl closure is special.
+ifeq ($(GOOS),nacl)
+closure.$O: nacl/$(GOARCH)/closure.c
+	$(QUOTED_GOBIN)/$(CC) $(CFLAGS) $<
+endif

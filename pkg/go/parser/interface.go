@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"os"
 	pathutil "path"
-	"strings"
 )
 
 
@@ -27,7 +26,7 @@ func readSource(filename string, src interface{}) ([]byte, os.Error) {
 	if src != nil {
 		switch s := src.(type) {
 		case string:
-			return strings.Bytes(s), nil
+			return []byte(s), nil
 		case []byte:
 			return s, nil
 		case *bytes.Buffer:
@@ -143,16 +142,45 @@ func ParseFile(filename string, src interface{}, scope *ast.Scope, mode uint) (*
 }
 
 
+// ParseFiles calls ParseFile for each file in the filenames list and returns
+// a map of package name -> package AST with all the packages found. The mode
+// bits are passed to ParseFile unchanged.
+//
+// Files with parse errors are ignored. In this case the map of packages may
+// be incomplete (missing packages and/or incomplete packages) and the last
+// error encountered is returned.
+//
+func ParseFiles(filenames []string, scope *ast.Scope, mode uint) (map[string]*ast.Package, os.Error) {
+	pkgs := make(map[string]*ast.Package)
+	var err os.Error
+	for _, filename := range filenames {
+		var src *ast.File
+		src, err = ParseFile(filename, nil, scope, mode)
+		if err == nil {
+			name := src.Name.Name()
+			pkg, found := pkgs[name]
+			if !found {
+				pkg = &ast.Package{name, scope, make(map[string]*ast.File)}
+				pkgs[name] = pkg
+			}
+			pkg.Files[filename] = src
+		}
+	}
+
+	return pkgs, err
+}
+
+
 // ParseDir calls ParseFile for the files in the directory specified by path and
 // returns a map of package name -> package AST with all the packages found. If
-// filter != nil, only the files with os.Dir entries passing through the filter
+// filter != nil, only the files with os.FileInfo entries passing through the filter
 // are considered. The mode bits are passed to ParseFile unchanged.
 //
 // If the directory couldn't be read, a nil map and the respective error are
 // returned. If a parse error occured, a non-nil but incomplete map and the
 // error are returned.
 //
-func ParseDir(path string, filter func(*os.Dir) bool, mode uint) (map[string]*ast.Package, os.Error) {
+func ParseDir(path string, filter func(*os.FileInfo) bool, mode uint) (map[string]*ast.Package, os.Error) {
 	fd, err := os.Open(path, os.O_RDONLY, 0)
 	if err != nil {
 		return nil, err
@@ -164,24 +192,17 @@ func ParseDir(path string, filter func(*os.Dir) bool, mode uint) (map[string]*as
 		return nil, err
 	}
 
-	var scope *ast.Scope = nil // for now tracking of declarations is disabled
-	pkgs := make(map[string]*ast.Package)
+	filenames := make([]string, len(list))
+	n := 0
 	for i := 0; i < len(list); i++ {
-		entry := &list[i]
-		if filter == nil || filter(entry) {
-			src, err := ParseFile(pathutil.Join(path, entry.Name), nil, scope, mode)
-			if err != nil {
-				return pkgs, err
-			}
-			name := src.Name.Name()
-			pkg, found := pkgs[name]
-			if !found {
-				pkg = &ast.Package{name, path, scope, make(map[string]*ast.File)}
-				pkgs[name] = pkg
-			}
-			pkg.Files[entry.Name] = src
+		d := &list[i]
+		if filter == nil || filter(d) {
+			filenames[n] = pathutil.Join(path, d.Name)
+			n++
 		}
 	}
+	filenames = filenames[0:n]
 
-	return pkgs, nil
+	var scope *ast.Scope = nil // for now tracking of declarations is disabled
+	return ParseFiles(filenames, scope, mode)
 }

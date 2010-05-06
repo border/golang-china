@@ -5,9 +5,9 @@
 package pem
 
 import (
-	"testing"
-	"strings"
+	"bytes"
 	"reflect"
+	"testing"
 )
 
 type GetLineTest struct {
@@ -27,7 +27,7 @@ var getLineTests = []GetLineTest{
 
 func TestGetLine(t *testing.T) {
 	for i, test := range getLineTests {
-		x, y := getLine(strings.Bytes(test.in))
+		x, y := getLine([]byte(test.in))
 		if string(x) != test.out1 || string(y) != test.out2 {
 			t.Errorf("#%d got:%+v,%+v want:%s,%s", i, x, y, test.out1, test.out2)
 		}
@@ -35,7 +35,7 @@ func TestGetLine(t *testing.T) {
 }
 
 func TestDecode(t *testing.T) {
-	result, remainder := Decode(strings.Bytes(pemData))
+	result, remainder := Decode([]byte(pemData))
 	if !reflect.DeepEqual(result, certificate) {
 		t.Errorf("#0 got:%#v want:%#v", result, certificate)
 	}
@@ -43,9 +43,76 @@ func TestDecode(t *testing.T) {
 	if !reflect.DeepEqual(result, privateKey) {
 		t.Errorf("#1 got:%#v want:%#v", result, privateKey)
 	}
-	result, _ = Decode(strings.Bytes(pemPrivateKey))
+	result, _ = Decode([]byte(pemPrivateKey))
 	if !reflect.DeepEqual(result, privateKey2) {
 		t.Errorf("#2 got:%#v want:%#v", result, privateKey2)
+	}
+}
+
+func TestEncode(t *testing.T) {
+	r := EncodeToMemory(privateKey2)
+	if string(r) != pemPrivateKey {
+		t.Errorf("got:%s want:%s", r, pemPrivateKey)
+	}
+}
+
+type lineBreakerTest struct {
+	in, out string
+}
+
+const sixtyFourCharString = "0123456789012345678901234567890123456789012345678901234567890123"
+
+var lineBreakerTests = []lineBreakerTest{
+	lineBreakerTest{"", ""},
+	lineBreakerTest{"a", "a\n"},
+	lineBreakerTest{"ab", "ab\n"},
+	lineBreakerTest{sixtyFourCharString, sixtyFourCharString + "\n"},
+	lineBreakerTest{sixtyFourCharString + "X", sixtyFourCharString + "\nX\n"},
+	lineBreakerTest{sixtyFourCharString + sixtyFourCharString, sixtyFourCharString + "\n" + sixtyFourCharString + "\n"},
+}
+
+func TestLineBreaker(t *testing.T) {
+	for i, test := range lineBreakerTests {
+		buf := bytes.NewBuffer(nil)
+		var breaker lineBreaker
+		breaker.out = buf
+		_, err := breaker.Write([]byte(test.in))
+		if err != nil {
+			t.Errorf("#%d: error from Write: %s", i, err)
+			continue
+		}
+		err = breaker.Close()
+		if err != nil {
+			t.Errorf("#%d: error from Close: %s", i, err)
+			continue
+		}
+
+		if string(buf.Bytes()) != test.out {
+			t.Errorf("#%d: got:%s want:%s", i, string(buf.Bytes()), test.out)
+		}
+	}
+
+	for i, test := range lineBreakerTests {
+		buf := bytes.NewBuffer(nil)
+		var breaker lineBreaker
+		breaker.out = buf
+
+		for i := 0; i < len(test.in); i++ {
+			_, err := breaker.Write([]byte(test.in[i : i+1]))
+			if err != nil {
+				t.Errorf("#%d: error from Write (byte by byte): %s", i, err)
+				continue
+			}
+		}
+		err := breaker.Close()
+		if err != nil {
+			t.Errorf("#%d: error from Close (byte by byte): %s", i, err)
+			continue
+		}
+
+		if string(buf.Bytes()) != test.out {
+			t.Errorf("#%d: (byte by byte) got:%s want:%s", i, string(buf.Bytes()), test.out)
+		}
 	}
 }
 

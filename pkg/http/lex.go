@@ -4,30 +4,22 @@
 
 package http
 
-import (
-	"strings"
-)
-
 // This file deals with lexical matters of HTTP
 
 func isSeparator(c byte) bool {
 	switch c {
 	case '(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '{', '}', ' ', '\t':
 		return true
-	default:
-		return false
 	}
-	panic()
+	return false
 }
 
 func isSpace(c byte) bool {
 	switch c {
 	case ' ', '\t', '\r', '\n':
 		return true
-	default:
-		return false
 	}
-	panic()
+	return false
 }
 
 func isCtl(c byte) bool { return (0 <= c && c <= 31) || c == 127 }
@@ -112,7 +104,7 @@ func httpUnquote(raw []byte) (eaten int, result string) {
 // the input string might be parsed. result is always non-nil.
 func httpSplitFieldValue(fv string) (eaten int, result []string) {
 	result = make([]string, 0, len(fv))
-	raw := strings.Bytes(fv)
+	raw := []byte(fv)
 	i := 0
 	chunk := ""
 	for i < len(raw) {

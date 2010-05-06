@@ -199,11 +199,11 @@ TEXT reflect·call(SB), 7, $0
 	MOVL	AX, (m_morebuf+gobuf_g)(BX)
 
 	// Set up morestack arguments to call f on a new stack.
-	// We set f's frame size to zero, meaning
-	// allocate a standard sized stack segment.
-	// If it turns out that f needs a larger frame than this,
-	// f's usual stack growth prolog will allocate
-	// a new segment (and recopy the arguments).
+	// We set f's frame size to 1, as a hint to newstack
+	// that this is a call from reflect·call.
+	// If it turns out that f needs a larger frame than
+	// the default stack, f's usual stack growth prolog will
+	// allocate a new segment (and recopy the arguments).
 	MOVL	4(SP), AX	// fn
 	MOVL	8(SP), DX	// arg frame
 	MOVL	12(SP), CX	// arg size
@@ -211,7 +211,7 @@ TEXT reflect·call(SB), 7, $0
 	MOVL	AX, m_morepc(BX)	// f's PC
 	MOVL	DX, m_morefp(BX)	// argument frame pointer
 	MOVL	CX, m_moreargs(BX)	// f's argument size
-	MOVL	$0, m_moreframe(BX)	// f's frame size
+	MOVL	$1, m_moreframe(BX)	// f's frame size
 
 	// Call newstack on m's scheduling stack.
 	MOVL	m_g0(BX), BP
@@ -311,6 +311,10 @@ TEXT	·setcallerpc+0(SB),7,$0
 	MOVL	BX, -4(AX)		// set calling pc
 	RET
 
+TEXT getcallersp(SB), 7, $0
+	MOVL	sp+0(FP), AX
+	RET
+
 TEXT ldt0setup(SB),7,$16
 	// set up ldt 7 to point at tls0
 	// ldt 1 would be fine on Linux, but on OS X, 7 is as low as we can go.
@@ -347,28 +351,64 @@ TEXT	runcgo(SB),7,$16
 	// Now on a scheduling stack (a pthread-created stack).
 	SUBL	$16, SP
 	ANDL	$~15, SP	// alignment for gcc ABI
+	MOVL	g(DI), BP
+	MOVL	BP, 8(SP)
+	MOVL	SI, g(DI)
 	MOVL	CX, 4(SP)
 	MOVL	BX, 0(SP)
 	CALL	AX
 	
-	// Back; switch to original stack, re-establish
+	// Back; switch to original g and stack, re-establish
 	// "DF is clear" invariant.
 	CLD
+	get_tls(DI)
+	MOVL	8(SP), SI
+	MOVL	SI, g(DI)
 	MOVL	4(SP), SP
+	RET
+
+// runcgocallback(G *g1, void* sp, void (*fn)(void))
+// Switch to g1 and sp, call fn, switch back.  fn's arguments are on
+// the new stack.
+TEXT	runcgocallback(SB),7,$32
+	MOVL	g1+0(FP), DX
+	MOVL	sp+4(FP), AX
+	MOVL	fn+8(FP), BX
+
+	// We are running on m's scheduler stack.  Save current SP
+	// into m->sched.sp so that a recursive call to runcgo doesn't
+	// clobber our stack, and also so that we can restore
+	// the SP when the call finishes.  Reusing m->sched.sp
+	// for this purpose depends on the fact that there is only
+	// one possible gosave of m->sched.
+	get_tls(CX)
+	MOVL	DX, g(CX)
+	MOVL	m(CX), CX
+	MOVL	SP, (m_sched+gobuf_sp)(CX)
+
+	// Set new SP, call fn
+	MOVL	AX, SP
+	CALL	BX
+
+	// Restore old g and SP, return
+	get_tls(CX)
+	MOVL	m(CX), DX
+	MOVL	m_g0(DX), BX
+	MOVL	BX, g(CX)
+	MOVL	(m_sched+gobuf_sp)(DX), SP
 	RET
 
 // check that SP is in range [g->stackbase, g->stackguard)
 TEXT stackcheck(SB), 7, $0
 	get_tls(CX)
-	MOVL g(CX), AX
-	CMPL g_stackbase(AX), SP
-	JHI 2(PC)
-	INT $3
-	CMPL SP, g_stackguard(AX)
-	JHI 2(PC)
-	INT $3
+	MOVL	g(CX), AX
+	CMPL	g_stackbase(AX), SP
+	JHI	2(PC)
+	INT	$3
+	CMPL	SP, g_stackguard(AX)
+	JHI	2(PC)
+	INT	$3
 	RET
-
 
 GLOBL m0(SB), $1024
 GLOBL g0(SB), $1024
