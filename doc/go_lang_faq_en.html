@@ -175,6 +175,36 @@ with the STL, a library for a language whose name contains, ironically, a
 postfix increment.
 </p>
 
+<h3 id="semicolons">
+Why are there braces but no semicolons? And why can't I put the opening
+brace on the next line?</h3>
+<p>
+Go uses brace brackets for statement grouping, a syntax familiar to
+programmers who have worked with any language in the C family.
+Semicolons, however, are for parsers, not for people, and we wanted to
+eliminate them as much as possible.  To achieve this goal, Go borrows
+a trick from BCPL: the semicolons that separate statements are in the
+formal grammar but are injected automatically, without lookahead, by
+the lexer at the end of any line that could be the end of a statement.
+This works very well in practice but has the effect that it forces a
+brace style.  For instance, the opening brace of a function cannot
+appear on a line by itself.
+</p>
+<p>
+Some have argued that the lexer should do lookahead to permit the
+brace to live on the next line.  We disagree.  Since Go code is meant
+to be formatted automatically by
+<a href="http://golang.org/cmd/gofmt/"><code>gofmt</code></a>,
+<i>some</i> style must be chosen.  That style may differ from what
+you've used in C or Java, but Go is a new language and
+<code>gofmt</code>'s style is as good as any other.  More
+important&mdash;much more important&mdash;the advantages of a single,
+programmatically mandated format for all Go programs greatly outweigh
+any perceived disadvantages of the particular style.
+Note too that Go's style means that an interactive implementation of
+Go can use the standard syntax one line at a time without special rules.
+</p>
+
 <h3 id="garbage_collection">
 Why do garbage collection?  Won't it be too expensive?</h3>
 <p>
@@ -252,20 +282,19 @@ This remains an open issue.
 <h3 id="exceptions">
 Why does Go not have exceptions?</h3>
 <p>
-Exceptions are a similar story.  A number of designs for exceptions
-have been proposed but each adds significant complexity to the
-language and run-time.  By their very nature, exceptions span functions and
-perhaps even goroutines; they have wide-ranging implications.  There
-is also concern about the effect they would have on the
-libraries.  They are, by definition, exceptional yet experience with
-other languages that support them show they have profound effect on
-library and interface specification.  It would be nice to find a design
-that allows them to be truly exceptional without encouraging common
-errors to turn into special control flow that requires every programmer to
-compensate.
+We believe that coupling exceptions to a control
+structure, as in the <code>try-catch-finally</code> idiom, results in
+convoluted code.  It also tends to encourage programmers to label
+too many ordinary errors, such as failing to open a file, as
+exceptional.
 </p>
 <p>
-Like generics, exceptions remain an open issue.
+Go takes a different approach.  Instead of exceptions, it has a couple
+of built-in functions to signal and recover from truly exceptional
+conditions.  The recovery mechanism is executed only as part of a
+function's state being torn down after an error, which is sufficient
+to handle catastrophe but requires no extra control structures and,
+when used well, can result in clean error-handling code.
 </p>
 
 <h3 id="assertions">
