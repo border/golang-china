@@ -137,21 +137,21 @@ a more robust run-time system although "gccgo" is catching up.
 Go是一个编译型的语言。目前有两种编译器，其中"Gccgo"采用GCC作为编译后端。另外还有
 根据处理器架构命名的编译器：针对64位x86结构为"6g"，针对32位x86结构的为"8g"等等。
 这些go专用的编译器编译很快，但是产生的目标代码效率比gccgo稍差一点。目前（2009年底），
-go专用的编译器的运行时系统比"gccgo"也要相对健壮一点。
+go专用的编译器的运行时系统比"gccgo"要相对健壮一点。
 
 Here's how to compile and run our program.  With "6g", say,
 
 下面看看如何编译并运行程序。先是用针对64位x86结构处理器的“6g”：
 
-	$ 6g helloworld.go  # compile; object goes into helloworld.6
-	$ 6l helloworld.6   # link; output goes into 6.out
+	$ 6g helloworld.go  # 编译; 输出 helloworld.6
+	$ 6l helloworld.6   # 链接; 输出 6.out
 	$ 6.out
 	Hello, world; or Καλημέρα κόσμε; or こんにちは 世界
 	$
 
 With "gccgo" it looks a little more traditional.
 
-gccgo和传统的gcc编译方法类似：
+如果是用gccgo编译，方法和传统的gcc编译方法类似：
 
 	$ gccgo helloworld.go
 	$ a.out
@@ -163,7 +163,7 @@ Echo
 
 Next up, here's a version of the Unix utility "echo(1)":
 
-下面的例子是Unix系统中"echo"命令的简化版：
+下面的例子是Unix系统中"echo"命令的简单实现：
 
 --PROG progs/echo.go /package/ END
 
@@ -174,9 +174,9 @@ Notice that we can group declarations of the same sort into
 parenthesized lists, one item per line, as on lines 7-10 and 14-17.
 But it's not necessary to do so; we could have said
 
-程序虽然很小，但是包含了go语言的更多特性。在前面的例子中，我们演示了如何用"func"定义函数。
-类似的关键字还有："var"、"const"和"type"等，它们都可以定义相关的元素，用法和"import"一致。
-我们也可以小括弧定义一组类型一样的元素（如7－10和14－17行所示）。当然，也可以分开定义：
+程序虽然很小，但是包含了go语言的更多特性。在上一个的例子中，我们演示了如何用"func"关键字定义函数。
+类似的关键字还有："var"、"const"和"type"等，它们可以用于定义变量、常量和类型等，用法和"import"一致。
+我们可以小括弧声明一组类型相同的变量（如7－10和14－17行所示）。当然，也可以分开独立定义：
 
 	const Space = " "
 	const Newline = "\n"
@@ -193,50 +193,50 @@ which by convention is of course the file name itself.  Our ``hello world'' prog
 could have said just "import &quot;fmt&quot;".
 
 程序首先导入"&quot;os&quot;"包，因为后面要用到包中的一个"*os.File"类型的"Stdout"变量。
-这里的"import"语句实际上是一个声明，和我们在“hello world“程序中所使用的，它的名字标识符（fmt）
-会取代fmt包中所定义的成员，并找到正确的目录和地址。在这个程序中，虽然我们没有在import中使用明确
-的名称，默认情况下将使用包的名字来import包。在“hello world“程序中，我们只是简单的
+这里的"import"语句实际上是一个声明，和我们在“hello world“程序中所使用方法一样，包的名字标识符（fmt）
+为前缀用于定位包中定位包中的成员，包可以是在当前目录或标准包目录。在导入包的时候一般会默认选用包本身的
+名字（在必要的时候可以将导入的包重新命名）。在“hello world“程序中，我们只是简单的
 "import &quot;fmt&quot;"。
 
 You can specify your
 own import names if you want but it's only necessary if you need to resolve
 a naming conflict.
 
-如果需要，你可以自己重新定义被import包的名字。但那不是必须的，只在出来包名字冲突的时候会用到。
+如果需要，你可以自己重新命名被import的包。但那不是必须的，只在处理包名字冲突的时候会用到。
 
 Given "os.Stdout" we can use its "WriteString" method to print the string.
 
-通过"os.Stdout"，我们可以用"WriteString"来输出字符串。
+通过"os.Stdout"，我们可以用包中的"WriteString"方法来输出字符串。
 
 Having imported the "flag" package, line 12 creates a global variable to hold
 the value of echo's "-n" flag. The variable "omitNewline" has type "*bool", pointer
 to "bool".
 
-现在已经导入"flag"包，并且在12行创建了一个全局变量，用于保存echo的"-n"命令行参数。变量
-"omitNewline"为一个bool型指针。
+现在已经导入"flag"包，并且在12行创建了一个全局变量，用于保存echo的"-n"命令行选项。变量
+"omitNewline"为一个只想bool变量的bool型指针。
 
 In "main.main", we parse the arguments (line 20) and then create a local
 string variable we will use to build the output.
 
-在"main.main"中，我们进行了参数解析（20行），并创建了一个局部变量用于保存要输出的内容。
+在"main.main"中，我们首先解析命令行参数（20行），然后创建了一个局部字符串变量用于保存要输出的内容。
 
 The declaration statement has the form
 
-变量声明如下：
+变量声明语法如下：
 
 	var s string = "";
 
 This is the "var" keyword, followed by the name of the variable, followed by
 its type, followed by an equals sign and an initial value for the variable.
 
-这里有一个"var"关键字，后面跟着变量名字和变量的数据类型，再后面可以用“＝”符号来进行赋值。
+这里有一个"var"关键字，后面跟着变量名字和变量的数据类型，再后面可以用“＝”符号来进行赋初值。
 
 Go tries to be terse, and this declaration could be shortened.  Since the
 string constant is of type string, we don't have to tell the compiler that.
 We could write
 
-这个变量的声明有更简洁的方式，因为根据初始值来判断它的数据类型，没有必要显式写出数据类型。
-因此也可以像下面代码这样定义变量：
+简洁是go的一个目标，变量的定义也有更简略的语法。go可以根据初始值来判断变量的类型，
+没有必要显式写出数据类型。也可以这样定义变量：
 
 	var s = "";
 
@@ -249,7 +249,8 @@ or we could go even shorter and write the idiom
 The ":=" operator is used a lot in Go to represent an initializing declaration.
 There's one in the "for" clause on the next line:
 
-操作符":="将在Go中大量使用，它可以在声明一个变量同时进行初始化。下面的代码是在"for"中声明并
+
+操作符":="将在Go中声明同时进行初始化一个变量时会经常使用。下面的代码是在"for"中声明并
 初始化变量：
 
 --PROG  progs/echo.go /for/
@@ -257,8 +258,8 @@ There's one in the "for" clause on the next line:
 The "flag" package has parsed the arguments and left the non-flag arguments
 in a list that can be iterated over in the obvious way.
 
-"flag"包会解析命令行参数，并将没有flag的参数保存到一个列表中。可以通过flag的参数列表
-访问命令行参数。
+"flag"包会解析命令行参数，并将不是flag选项的参数保存到一个列表中。可以通过flag的参数列表
+访问普通的命令行参数。
 
 The Go "for" statement differs from that of C in a number of ways.  First,
 it's the only looping construct; there is no "while" or "do".  Second,
@@ -266,15 +267,15 @@ there are no parentheses on the clause, but the braces on the body
 are mandatory.  The same applies to the "if" and "switch" statements.
 Later examples will show some other ways "for" can be written.
 
-Go语言的"for"语句和C语言中有几个不同的地方：第一，这是Go中唯一的循环语句，Go中没有while或
-do语句；第二，for的条件语句并没有用括号包起来，但是循环体却必须要花括弧，这个规则和if和switch
-一致。后面我们会看到for的一些例子。
+Go语言的"for"语句和C语言中有几个不同的地方：第一，for是Go中唯一的循环语句，Go中没有while或
+do语句；第二，for的条件语句并不需要用小括号包起来，但是循环体却必须要花括弧，这个规则同样适用于
+if和switch。后面我们会看到for的一些例子。
 
 The body of the loop builds up the string "s" by appending (using "+=")
 the flags and separating spaces. After the loop, if the "-n" flag is not
 set, the program appends a newline. Finally, it writes the result.
 
-在循环体中，通过"+="符号向字符串s添加新的参数信息。在循环结束后，根据命令行是否有"-n"选项，
+在循环体中，通过"+="操作符向字符串"s"添加要命令行参数和空白。在循环结束后，根据命令行是否有"-n"选项，
 判断末尾是否要添加换行符。最后输出结果。
 
 Notice that "main.main" is a niladic function with no return type.
@@ -282,7 +283,7 @@ It's defined that way.  Falling off the end of "main.main" means
 ''success''; if you want to signal an erroneous return, call
 
 值得注意的地方是"main.main"函数并没有返回值（函数被定义为没有返回值的类型）。如果"main.main"
-运行到了末尾，就表示“成功”。如果想返回一个出错信息，可统一用系统调用强制退出：
+运行到了末尾，就表示“成功”。如果想返回一个出错信息，可用系统调用强制退出：
 
 	os.Exit(1)
 
@@ -290,7 +291,7 @@ The "os" package contains other essentials for getting
 started; for instance, "os.Args" is a slice used by the
 "flag" package to access the command-line arguments.
 
-"os"包还包含了其它的一些元素，例如"os.Args"是"flag"包的一部分（用来获取命令行输入）。
+"os"包还包含了其它的许多启动相关的功能，例如"os.Args"是"flag"包的一部分（用来获取命令行输入）。
 
 An Interlude about Types 类型简介
 ----
