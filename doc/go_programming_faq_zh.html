@@ -1,15 +1,27 @@
 <!-- Programming FAQ -->
+<p>
+<h2>译者</h2>
+<p>
+<pre>
+    原文：<a href='http://golang.org/doc/go_programming_faq.html'>http://golang.org/doc/go_programming_faq.html</a>
+    翻译：<a href='http://bbs.golang-china.org/memberlist.php?mode=viewprofile&u=209'>wxf6981</a> <a href='mailto:wxf6981@gmail.com'>(wxf6981@gmail.com)</a>
+    <a href='http://golang-china.org/'>Go语言中文用戶组</a>
+</pre>
+<p>
 
-<h2 id="Pointers">Pointers and Allocation</h2>
+<h2 id="Pointers">Pointers and Allocation(指针和分配)</h2>
 
 <h3 id="pass_by_value">
-When are function paramters passed by value?</h3>
+When are function paramters passed by value(什么时候函数参数传递数值)?</h3>
 
 <p>
 Everything in Go is passed by value.  A function always gets a copy of the
 thing being passed, as if there were an assignment statement assigning the
 value to the parameter.  For instance, copying a pointer value makes a copy of
 the pointer, not the data it points to. 
+</p>
+<p>
+Go里的所有的东西都是用数值传递. 一个函数总是获取这个东西传递的拷贝,只是有一个分配声明给这个参数分配这个数值. 例如,拷贝一个指针数值就做了这个指针的拷贝,而不是指针指向的数据.
 </p>
 
 <p>
@@ -21,9 +33,12 @@ value holds a struct, copying the interface value makes a copy of the
 struct.  If the interface value holds a pointer, copying the interface value
 makes a copy of the pointer, but again not the data it points to. 
 </p>
+<p>
+map和slice的值表现的像指针; 它们是包含指向里面的数据的指针的描述. 拷贝一个map或者一个slice值没有拷贝里面指向的数据.拷贝一个接口数据就是拷贝了保存在里面的东西. 如果一个接口包含了一个结构,拷贝接口就拷贝了里面的结构.如果一个接口包含了一个指针,拷贝接口就拷贝了里面的指针,但是指针指向的数据仍然不拷贝.
+</p>
 
 <h3 id="methods_on_values_or_pointers">
-Should I define methods on values or pointers?</h3>
+Should I define methods on values or pointers(在定义方法类型的时候是采用值还是指针)?</h3>
 
 <pre>
 func (s *MyStruct) someMethod() { } // method on pointer
@@ -36,22 +51,32 @@ example) behaves exactly is if it were an argument to the method. Define the
 method on a pointer type if you need the method to modify the data the receiver
 points to. Otherwise, it is often cleaner to define the method on a value type.
 </p>
+<p>
+当在一个类型上定义一个方法是, 这个接收器(上面的例子里是 s )运行起来就像它是这个方法的参数.
+在一个指针类型上定义这个方法,如果你需要修改接收器指向的数据. 否则,定义数值类型的方法就很清楚了.
+</p>
 
 <h3 id="new_and_make">
-What's the difference between new and make?</h3>
+What's the difference between new and make(new和make有什么不同)?</h3>
 
 <p>
 In short: <code>new</code> allocates memory, <code>make</code> initializes
 the slice, map, and channel types.
+</p>
+<p>
+简单说: <code>new</code> 分配内存空间, <code>make</code>始化slice,map和channel类型.
 </p>
 
 <p>
 See the <a href="/doc/effective_go.html#allocation_new">relevant section
 of Effective Go</a> for more details.
 </p>
+<p>
+请看<a href="/doc/effective_go.html#allocation_new">Effective Go</a> 里面相关的章节获取详细的内容.
+</p>
 
 <h3 id="64bit_machine_32bit_int">
-Why is <code>int</code> 32 bits on 64 bit machines?</h3>
+Why is <code>int</code> 32 bits on 64 bit machines(为什么int 在64 位机器上是32 位)?</h3>
 
 <p>
 The size of <code>int</code> and <code>float</code> is implementation-specific.
@@ -60,17 +85,26 @@ both <code>int</code> and <code>float</code>.  Code that relies on a particular
 size of value should use an explicitly sized type, like <code>int64</code> or
 <code>float64</code>.
 </p>
+<p>
+<code>int</code> 和 <code>float</code> 的大小是特定实现的.
+64位Go编译器(包括6g和gccgo)使用32位实现了<code>int</code> 和 <code>float</code>.  靠特定的大小的代码应该使用明确的大小类型,像 <code>int64</code> 或者 <code>float64</code>.
+</p>
 
-<h2 id="Concurrent_programming">Concurrent programming</h2>
+<h2 id="Concurrent_programming">Concurrent programming(并行编程)</h2>
 
 <h3 id="What_operations_are_atomic_What_about_mutexes">
-What operations are atomic? What about mutexes?</h3>
+What operations are atomic? What about mutexes(什么操作是原子的? 互斥是不是)?</h3>
 
 <p>
 We haven't fully defined it all yet, but some details about atomicity are
 available in the <a href="go_mem.html">Go Memory Model specification</a>.
 Also, some concurrency questions are answered in more detail in the <a
 href="go_lang_faq.html">language design FAQ</a>.
+</p>
+<p>
+我们还没有定义它呢, 但是一些关于原子化的细节在<a href="go_mem.html">Go 的内存模型规范</a>里有说明.
+同样,一些并行问题在<a
+href="go_lang_faq.html">language design FAQ</a>里有详细的回答.
 </p>
 
 <p>
@@ -80,19 +114,28 @@ encourage people to try higher-level techniques. In particular, consider
 structuring your program so that only one goroutine at a time is ever
 responsible for a particular piece of data.
 </p>
+<p>
+关于互斥,<a href="/pkg/sync">sync</a>sync包里实现了他们, 但是我们希望Go编程风格能够鼓励人们尝试高级技术. 在特定情况下,考虑建造你的层序,以便于一次只有一个goroutine负责一个特定的数据块.
+</p>
 
 <p>
 Do not communicate by sharing memory. Instead, share memory by communicating.
 </p>
+<p>
+不要用分享内存的方式通讯,作为代替,用通信的方式分享内存.
+</p>
 
 <h3 id="Why_no_multi_CPU">
-Why doesn't my multi-goroutine program use multiple CPUs?</h3>
+Why doesn't my multi-goroutine program use multiple CPUs(为什么我的多goroutine程序不使用多CPU)?</h3>
 
 <p>
 Under the gc compilers you must set <code>GOMAXPROCS</code> to allow the
 runtime to utilise more than one OS thread. Under <code>gccgo</code> an OS
 thread will be created for each goroutine, and <code>GOMAXPROCS</code> is
 effectively equal to the number of running goroutines.  
+</p>
+<p>
+在gc编译器下,你必须设置<code>GOMAXPROCS</code> 允许运行时使用多个OS线程. 在 <code>gccgo</code>下, 每一个OS线程将创建一个goroutine, <code>GOMAXPROCS</code> 恰好等于运行的goroutine的数量.  
 </p>
 
 <p>
@@ -101,13 +144,21 @@ Programs that perform concurrent computation should benefit from an increase in
 href="http://golang.org/pkg/runtime/#GOMAXPROCS">runtime package
 documentation</a>.)
 </p>
+<p>
+运行并行计算的程序可以靠提高<code>GOMAXPROCS</code>来提高效率. (请看<a
+href="http://golang.org/pkg/runtime/#GOMAXPROCS">runtime package
+documentation</a>.)
+</p>
 
 <h3 id="Why_GOMAXPROCS">
 Why does using <code>GOMAXPROCS</code> &gt; 1 sometimes make my program
-slower?</h3>
+slower(为什么有时候使用GOMAXPROCS  &gt; 1 让我的程序变慢了)?</h3>
 
 <p>
 (This is specific to the gc compilers. See above.)
+</p>
+<p>
+(这取决于gc编译器,请看上面.)
 </p>
 
 <p>
@@ -117,21 +168,30 @@ communicating on channels will experience performance degradation when using
 multiple OS threads. This is because of the significant context-switching
 penalty involved in sending data between threads.
 </p>
+<p>
+这取决于你的程序的类型. 包含几个goroutine的程序,如果这些goroutine花费大量的时间在channel上进行通信, 当使用操作系统线程的时候将会感到性能下降. 这是因为在线程之间发送数据造成的大量的上下文切换消耗.
+</p>
 
 <p>
 The Go runtime's scheduler is not as good as it needs to be. In future, it
 should recognise such cases and optimize its use of OS threads. For now,
 <code>GOMAXPROCS</code> should be set on a per-application basis.
 </p>
+<p>
+Go 运行时的安排还没有达到它的需要.未来,它应该能够识别和优化OS线程. 现在,
+<code>GOMAXPROCS</code> 应该在每一个程序基础上设置.
+</p>
 
-
-<h2 id="Functions_methods">Functions and Methods</h2>
+<h2 id="Functions_methods">Functions and Methods(函数和方法)</h2>
 
 <h3 id="different_method_sets">
-Why do T and *T have different method sets?</h3>
+Why do T and *T have different method sets(为什么T和*T有不同的方法)?</h3>
 
 <p>
 From the <a href="http://golang.org/doc/go_spec.html#Types">Go Spec</a>:
+</p>
+<p>
+从 <a href="http://golang.org/doc/go_spec.html#Types">Go Spec</a>里知道:
 </p>
 
 <blockquote>
@@ -147,9 +207,16 @@ a method call can obtain a value by dereferencing the pointer,
 but if an interface value contains a value <code>T</code>,
 there is no useful way for a method call to obtain a pointer.
 </p>
+<p>
+如果一个接口值包含了一个指针 <code>*T</code>, 个方法调用能够通过反引这个指针而获得里面的值,
+但是如果一个接口值包含一个值<code>T</code>, 就没有办法用方法调用得到里面的指针.
+</p>
 
 <p>
 If not for this restriction, this code:
+</p>
+<p>
+如果不是这样限制的话,下面的代码:
 </p>
 
 <pre>
@@ -162,12 +229,19 @@ would copy standard input into a <i>copy</i> of <code>buf</code>,
 not into <code>buf</code> itself.
 This is almost never the desired behavior.
 </p>
+<p>
+将拷贝一个标准的输入到一个buf的拷贝,而不是buf自己.这从来不是希望的行为. 
+</p>
 
 <h3 id="closures_and_goroutines">
-Why am I confused by the way my closures behave as goroutines?</h3>
+Why am I confused by the way my closures behave as goroutines(为什么我总是被goroutine的行为困扰)?</h3>
 
 <p>
 Some confusion may arise when using closures with concurrency.
+Consider the following program:
+</p>
+<p>
+当使用并行的时候总会产生困扰.
 Consider the following program:
 </p>
 
@@ -197,10 +271,18 @@ each closure shares the same variable <code>v</code>. Each closure prints the
 value of <code>v</code> at the time <code>fmt.Println</code> is executed, 
 rather than the value of <code>v</code> when the goroutine was launched. 
 </p>
+<p>
+有人可能错误的预料看到的输出是<code>a, b, c</code>. 
+但是你看到的是<code>c, c, c</code>.  T这是因为每一个封闭分享同样的变量 <code>v</code>. 
+每一个封闭在fmt.Println执行的时候打印v的值, 而不是在gotoutine加载的时候的v的值. 
+</p>
 
 <p>
 To bind the value of <code>v</code> to each closure as they are launched, one
 could modify the inner loop to read:
+</p>
+<p>
+为了在每一个封闭加载的时候就绑定<code>v</code>的值,你可以修改里面的循环:
 </p>
 
 <pre>
@@ -217,15 +299,22 @@ In this example, the value of <code>v</code> is passed as an argument to the
 anonymous function. That value is then accessible inside the function as
 the variable <code>u</code>.
 </p>
+<p>
+在这个例子里,v的值最为参数传递给匿名函数. 这个值于是在函数里面作为变量u进行处理.
+</p>
 
 <h2 id="Control_flow">Control flow</h2>
 
 <h3 id="Does_Go_have_a_ternary_form">
-Does Go have the <code>?:</code> operator?</h3>
+Does Go have the <code>?:</code> operator(Go有?:操作符么)?</h3>
 
 <p>
 There is no ternary form in Go. You may use the following to achieve the same
 result:
+</p>
+<p>
+Go里没有3元形态.
+你可以使用下面的代码来获得同样的效果
 </p>
 
 <pre>
@@ -236,29 +325,39 @@ if expr {
 }
 </pre>
 
-<h2 id="Packages_Testing">Packages and Testing</h2>
+<h2 id="Packages_Testing">Packages and Testing(包和测试)</h2>
 
 <h3 id="How_do_I_create_a_multifile_package">
-How do I create a multifile package?</h3>
+How do I create a multifile package(我怎样创建一个多文件的包)?</h3>
 
 <p>
 Put all the source files for the package in a directory by themselves.
 Source files can refer to items from different files at will; there is
 no need for forward declarations or a header file.
 </p>
+<p>
+把所有的这个包的源文件放在一个文件夹里.源文件可以在需要的时候引用不同的文件里的项; 不需要提前声明或者头文件.
+</p>
 
 <p>
 Other than being split into multiple files, the package will compile and test
 just like a single-file package.
 </p>
+<p>
+包将相单独文件包一样编译和测试,而不是分成多个文件.
+</p>
 
 <h3 id="How_do_I_write_a_unit_test">
-How do I write a unit test?</h3>
+How do I write a unit test(我怎样写一个单元测试)?</h3>
 
 <p>
 Create a new file ending in <code>_test.go</code> in the same directory
 as your package sources. Inside that file, <code>import "testing"</code>
 and write functions of the form
+</p>
+<p>
+在相同的文件夹里,在<code>_test.go</code>里创建一个文件结尾作为你的包的资源. 
+在那个文件里,引入<code>import "testing"</code>,以下面的形式写函数
 </p>
 
 <pre>
@@ -272,15 +371,21 @@ Run <code>gotest</code> in that directory.
 That script finds the <code>Test</code> functions,
 builds a test binary, and runs it.
 </p>
-
+<p>
+在那个文件夹里运行<code>gotest</code>.
+那段代码发现<code>Test</code>函数,建立一个测试二进制文件,然后运行它.
+</p>
 
 <h2 id="Data_structures">Data Structures</h2>
 
 <h3 id="nested_array_verbose"
->Why does the syntax for nested array literals seem overly verbose?</h3>
+>Why does the syntax for nested array literals seem overly verbose(为什么嵌入数组列表的语法看起来冗长)?</h3>
 
 <p>
 In Go, you must specify a 2-dimensional array literal like this:
+</p>
+<p>
+在Go里,你必须指定一个2维数组表,像下面这样:
 </p>
 
 <pre>
@@ -296,6 +401,9 @@ var intArray = [4][4]int{
 It seems that the <code>[4]int</code> could be inferred, but in general it's
 hard to get this sort of thing right.
 </p>
+<p>
+看起来应该是<code>[4]int</code>,但是通常很难让这类东西正确.
+</p>
 
 <p>
 Some of Go's designers had worked on other languages that derived types
@@ -304,4 +412,8 @@ be messy, especially when interfaces, nil, constant conversions, and
 such are involved. It seemed better to require the full type
 information. That way there will be no surprises.
 </p>
-
+<p>
+有的Go的设计者已经在其他能够在这样的表达式里自动获取类型的语言工作过,
+但是有时候也很麻烦, 尤其是当包含了接口,nil,常数转换,诸如此类的时候.
+看起来还是需要完整的类型信息更好.这样就不会搞的莫名其妙了.
+</p>
