@@ -19,6 +19,16 @@ Todo
 [ ] review language on implicit dereferencing
 -->
 
+
+<!--
+翻译约定：
+	1、原文中个别难以翻译的语句，可以自由翻译，但应保证不改变原文意思。
+	2、被引用的英文单词或短语与译文中的汉语间添加一个空格。如，“该文档是 Go 语言的参考手册。”
+	3、引用原文格式。如果造成译文重叠，可以适应调整格式。如，前后添加空格，去掉格式等。
+	4、可以在译文中添加标记以更符合中文习惯。
+-->
+
+
 <p>
 <h2>译者</h2>
 <p>
@@ -28,11 +38,15 @@ Todo
 </pre>
 <p>
 
-<h2 id="Introduction">Introduction</h2>
+<h2 id="Introduction">Introduction 介绍</h2>
 
 <p>
 This is a reference manual for the Go programming language. For
 more information and other documents, see <a href="http://golang.org/">http://golang.org</a>.
+</p>
+
+<p>
+该文档是 Go 语言的参考手册。更多信息和文档参见： <a href="http://golang.org/">http://golang.org</a>.
 </p>
 
 <p>
@@ -45,11 +59,21 @@ compile/link model to generate executable binaries.
 </p>
 
 <p>
+Go 是一种通用编程语言，为系统编程而设计。它是强类型语言，拥有垃圾回收机制，并且明确支持并行编程。
+程序由 <i>包</i> 构成， <i>包</i> 具有的特性可以有效管理依赖关系。现有的实现采用“编译/链接”模式
+来生成可执行二进制文件。
+</p>
+
+<p>
 The grammar is compact and regular, allowing for easy analysis by
 automatic tools such as integrated development environments.
 </p>
 
-<h2 id="Notation">Notation</h2>
+<p>
+语法紧凑而有规律，自动工具（比如集成开发环境）可以很容易的对其进行分析。
+</p>
+
+<h2 id="Notation">Notation 记法</h2>
 <p>
 The syntax is specified using Extended Backus-Naur Form (EBNF):
 </p>
@@ -65,6 +89,21 @@ Repetition  = "{" Expression "}" .
 </pre>
 
 <p>
+<!-- 使用扩展巴科斯-诺尔范式（FBNF）来定义语法 -->
+使用扩展巴科斯-诺尔范式（FBNF）来描述语法：
+</p>
+
+<pre class="grammar">
+生产式  = 生产式名称 "=" 表达式 "." .
+表达式  = 选择式 { "|" 选择式 } .
+选择式  = 术语 { 术语 } .
+术语      = 生产式名称 | 符号 [ "..." 符号 ] | 组 | 选项 | 重复 .
+组      = "(" 表达式 ")" .
+选项    = "[" 表达式 "]" .
+重复    = "{" 表达式 "}" .
+</pre>
+
+<p>
 Productions are expressions constructed from terms and the following
 operators, in increasing precedence:
 </p>
@@ -76,9 +115,24 @@ operators, in increasing precedence:
 </pre>
 
 <p>
+生产式由术语和下面的操作符构成，优先级依次递增：
+</p>
+<pre class="grammar">
+|   分隔
+()  分组
+[]  可选 (0 或 1 次)
+{}  重复 (0 或 n 次)
+</pre>
+
+<p>
 Lower-case production names are used to identify lexical tokens.
 Non-terminals are in CamelCase. Lexical symbols are enclosed in
 double quotes <code>""</code> or back quotes <code>``</code>.
+</p>
+
+<p>
+小写生产式名用于识别词汇记号。非终结符用骆驼拼写法。词汇符号被包围在双引号
+ <code>""</code> 或单引号 <code>``</code> 中.
 </p>
 
 <p>
@@ -86,7 +140,12 @@ The form <code>a ... b</code> represents the set of characters from
 <code>a</code> through <code>b</code> as alternatives.
 </p>
 
-<h2 id="Source_code_representation">Source code representation</h2>
+<p>
+<code>a ... b</code> 的形式表示把 <code>a</code> 到 <code>b</code> 的字母
+组成的集合当作可选项。
+</p>
+
+<h2 id="Source_code_representation">Source code representation 源代码表示</h2>
 
 <p>
 Source code is Unicode text encoded in
@@ -96,24 +155,52 @@ same character constructed from combining an accent and a letter;
 those are treated as two code points.  For simplicity, this document
 will use the term <i>character</i> to refer to a Unicode code point.
 </p>
+
+<p>
+源代码是用 <a href="http://en.wikipedia.org/wiki/UTF-8">UTF-8</a> 编码
+的 Unicode 文本。文本不是规范化的，因此一个单独加了重音的代码点有别于由字母和重音
+结合而成的字符；它们对当作两个代码点对待。为了简单起见，该文档使用术语 <i>字符</i> 
+指代 Unicode 代码点。
+</p>
+
 <p>
 Each code point is distinct; for instance, upper and lower case letters
 are different characters.
 </p>
+
+<p>
+每个代码点都是不同的；如，大写字母和小字字母是不同的字符。
+</p>
+
 <p>
 Implementation restriction: For compatibility with other tools, a
 compiler may disallow the NUL character (U+0000) in the source text.
 </p>
 
-<h3 id="Characters">Characters</h3>
+<p>
+执行限制: 为了与其它工具兼容, 编译器可能不允许在源代码中包含 NUL 字符 (U+0000) 。
+</p>
+
+<h3 id="Characters">字符</h3>
 
 <p>
 The following terms are used to denote specific Unicode character classes:
 </p>
+
 <pre class="ebnf">
 unicode_char   = /* an arbitrary Unicode code point */ .
 unicode_letter = /* a Unicode code point classified as "Letter" */ .
 unicode_digit  = /* a Unicode code point classified as "Digit" */ .
+</pre>
+
+<p>
+下面的术语用于表示指定的 Unicode 字符类：
+</p>
+
+<pre class="ebnf">
+unicode_char   = /* 任意一个 Unicode 代码点 */ .
+unicode_letter = /* 属于 "字母" 类的一个 Unicode 代码点 */ .
+unicode_digit  = /* 属于 "数字" 类的一个 Unicode 代码点 */ .
 </pre>
 
 <p>
@@ -124,11 +211,22 @@ those characters in category Lu, Ll, Lt, Lm, or Lo as Unicode letters,
 and those in category Nd as Unicode digits.
 </p>
 
-<h3 id="Letters_and_digits">Letters and digits</h3>
+<p>
+在 <a href="http://www.unicode.org/versions/Unicode5.2.0/">Unicode 标准 5.2</a> 中,
+第 4.5 节 General Category-Normative（一般分类规范）中定义了一组字符类别。Go 语言把 Lu, Ll, 
+Lt, Lm 或 Lo 类中的字符当作 Unicode 字母, 把 Nd 类中的字符当作 Unicode 数字。
+</p>
+
+<h3 id="Letters_and_digits">Letters and digits 字母和数字</h3>
 
 <p>
 The underscore character <code>_</code> (U+005F) is considered a letter.
 </p>
+
+<p>
+下划线 <code>_</code> (U+005F) 被当作字母。
+</p>
+
 <pre class="ebnf">
 letter        = unicode_letter | "_" .
 decimal_digit = "0" ... "9" .
@@ -136,9 +234,9 @@ octal_digit   = "0" ... "7" .
 hex_digit     = "0" ... "9" | "A" ... "F" | "a" ... "f" .
 </pre>
 
-<h2 id="Lexical_elements">Lexical elements</h2>
+<h2 id="Lexical_elements">Lexical elements 词法元素</h2>
 
-<h3 id="Comments">Comments</h3>
+<h3 id="Comments">Comments 注释</h3>
 
 <p>
 There are two forms of comments:
@@ -158,11 +256,29 @@ like a space.
 </ol>
 
 <p>
+注释有两种形式：
+</p>
+
+<ol>
+<li>
+<i>行注释</i> 从 <code>//</code> 开始直到行尾。行注释的行为就像一个换行符。
+</li>
+<li>
+<i>普通注释</i> 从 <code>/*</code> 开始直到 <code>*/</code>。
+如果普通注释跨跃多行，它的行为就像一个换行符，否则它的行为就像一个空格。
+</li>
+</ol>
+
+<p>
 Comments do not nest.
 </p>
 
+<p>
+注释不要嵌套。
+</p>
 
-<h3 id="Tokens">Tokens</h3>
+
+<h3 id="Tokens">Tokens 标记</h3>
 
 <p>
 Tokens form the vocabulary of the Go language.
@@ -178,12 +294,26 @@ the next token is the longest sequence of characters that form a
 valid token.
 </p>
 
-<h3 id="Semicolons">Semicolons</h3>
+<p>
+Go 语言的词汇由标记组成.
+分为四类: <i>标识符</i>、<i>关键字</i>、<i>运算符和分隔符</i> 和 <i>直接常量</i>。
+由空格(U+0020)、水平制表符(U+0009)、回车符(U+000D)、换行符(U+000A)组成的 <i>空白</i> 
+除用于分隔标记的之外，都会被合并为一个标记。同时，换行可能会触发一个 
+<a href="#Semicolons">分号</a> 插入操作。在把输入分解为标记时，
+下一个标记将会是可以组成合法标记的最长字符序列。
+</p>
+
+<h3 id="Semicolons">Semicolons 分号</h3>
 
 <p>
 The formal grammar uses semicolons <code>";"</code> as terminators in
 a number of productions. Go programs may omit most of these semicolons
 using the following two rules:
+</p>
+
+<p>
+正式的语法用分号 <code>";"</code> 作为生产式的终结符。Go 程序可能使用以下两个规则
+来省略大多数分号。
 </p>
 
 <ol>
@@ -213,19 +343,55 @@ may be omitted before a closing <code>")"</code> or <code>"}"</code>.
 </li>
 </ol>
 
+
+<ol>
+<li>
+<p>
+在把输入分解成标记的时候，如果不是空行并且该行的最后一个标记是以下情况时，会在标记流的末尾自动插入一个分号。
+</p>
+<ul>
+	<li>标识符
+	<li>整数、浮点数、字符或字符串直接常量
+	<li>以下关键字之一 
+	    <code>break</code>、<code>continue</code>、<code>fallthrough</code> 
+	    或 <code>return</code>
+	</li>
+	<li>以下运算符或分隔符之一 
+	    <code>++</code>、<code>--</code>、<code>)</code>、<code>]</code> 
+	    或 <code>}</code>
+	</li>
+</ul>
+</li>
+
+<li>
+为了在一行中作复杂的声明，在封闭的 <code>")"</code> 或 <code>"}"</code>
+之前的分号将被省略。
+</li>
+</ol>
+
 <p>
 To reflect idiomatic use, code examples in this document elide semicolons
 using these rules.
 </p>
 
+<p>
+为了习惯这种用法，该文档中所有示例中的分号都将依据以上规则省略。
+</p>
 
-<h3 id="Identifiers">Identifiers</h3>
+<h3 id="Identifiers">Identifiers 标识符</h3>
 
 <p>
 Identifiers name program entities such as variables and types.
 An identifier is a sequence of one or more letters and digits.
 The first character in an identifier must be a letter.
 </p>
+
+<p>
+标识符用来给程序中的实体（如变量和类型）命名。
+一个标识符就是由一个或多个字母和数字组成的序列。
+标识符的第一个字符必须是字母。
+</p>
+
 <pre class="ebnf">
 identifier = letter { letter | unicode_digit } .
 </pre>
@@ -240,25 +406,44 @@ ThisVariableIsExported
 Some identifiers are <a href="#Predeclared_identifiers">predeclared</a>.
 </p>
 
+<p>
+有些标识符是 <a href="#Predeclared_identifiers">预定义</a> 的。
+</p>
 
-<h3 id="Keywords">Keywords</h3>
+<h3 id="Keywords">Keywords 关键字</h3>
 
 <p>
 The following keywords are reserved and may not be used as identifiers.
 </p>
+
+<p>
+以下关键字是被保留的，不能用作标识符。
+</p>
+
 <pre class="grammar">
 break        default      func         interface    select
 case         defer        go           map          struct
 chan         else         goto         package      switch
 const        fallthrough  if           range        type
-continue     for          import       return       var
+continue     for          import       <p>
+An integer literal is a sequence of digits representing an
+<a href="#Constants">integer constant</a>.
+An optional prefix sets a non-decimal base: <code>0</code> for octal, <code>0x</code> or
+<code>0X</code> for hexadecimal.  In hexadecimal literals, letters
+<code>a-f</code> and <code>A-F</code> represent values 10 through 15.
+</p>return       var
 </pre>
 
-<h3 id="Operators_and_Delimiters">Operators and Delimiters</h3>
+<h3 id="Operators_and_Delimiters">Operators and Delimiters 运算符和分隔符</h3>
 
 <p>
 The following character sequences represent <a href="#Operators">operators</a>, delimiters, and other special tokens:
 </p>
+
+<p>
+下面的字符序列代表  <a href="#Operators">运算符</a>、分隔符和其它特殊标记：
+</p>
+
 <pre class="grammar">
 +    &amp;     +=    &amp;=     &amp;&amp;    ==    !=    (    )
 -    |     -=    |=     ||    &lt;     &lt;=    [    ]
@@ -268,7 +453,7 @@ The following character sequences represent <a href="#Operators">operators</a>, 
      &amp;^          &amp;^=
 </pre>
 
-<h3 id="Integer_literals">Integer literals</h3>
+<h3 id="Integer_literals">Integer literals 整型字面值</h3>
 
 <p>
 An integer literal is a sequence of digits representing an
@@ -277,6 +462,14 @@ An optional prefix sets a non-decimal base: <code>0</code> for octal, <code>0x</
 <code>0X</code> for hexadecimal.  In hexadecimal literals, letters
 <code>a-f</code> and <code>A-F</code> represent values 10 through 15.
 </p>
+
+<p>
+整型字面值是一个代表 <a href="#Constants">整型常量</a> 的数字序列。
+可以添加一个前缀来表示非十进制基底的数： <code>0</code> 代表八进制， <code>0x</code> 或
+<code>0X</code> 代表十六进制。在十六进制的字面值中，字母
+<code>a-f</code> 和 <code>A-F</code> 代表值 10 到 15。
+</p>
+
 <pre class="ebnf">
 int_lit     = decimal_lit | octal_lit | hex_lit .
 decimal_lit = ( "1" ... "9" ) { decimal_digit } .
@@ -291,7 +484,7 @@ hex_lit     = "0" ( "x" | "X" ) hex_digit { hex_digit } .
 170141183460469231731687303715884105727
 </pre>
 
-<h3 id="Floating-point_literals">Floating-point literals</h3>
+<h3 id="Floating-point_literals">Floating-point literals 浮点数字面值</h3>
 <p>
 A floating-point literal is a decimal representation of a
 <a href="#Constants">floating-point constant</a>.
@@ -302,6 +495,16 @@ followed by an optionally signed decimal exponent.  One of the
 integer part or the fractional part may be elided; one of the decimal
 point or the exponent may be elided.
 </p>
+
+<p>
+浮点字面值是 <a href="#Constants">浮点数常量</a>
+的十进制表示。
+它有一个整数部分、一个分数部分、一个小数部分和一个指数部分。
+整数和分数部分包括十进制数；指数部分是一个 <code>e</code> or <code>E</code>
+后面可选的跟着一上二进制指数。
+整数部分和分数部分可以二者舍其一；小数点和指数也可以二者舍其一。
+</p>
+
 <pre class="ebnf">
 float_lit = decimals "." [ decimals ] [ exponent ] |
             decimals exponent |
@@ -322,7 +525,7 @@ exponent  = ( "e" | "E" ) [ "+" | "-" ] decimals .
 .12345E+5
 </pre>
 
-<h3 id="Imaginary_literals">Imaginary literals</h3>
+<h3 id="Imaginary_literals">Imaginary literals 虚数字面值</h3>
 <p>
 An imaginary literal is a decimal representation of the imaginary part of a
 <a href="#Constants">complex constant</a>.
@@ -331,6 +534,14 @@ It consists of a
 or decimal integer followed
 by the lower-case letter <code>i</code>.
 </p>
+
+<p>
+虚数字面值是 <a href="#Constants">复数型常量</a> 的虚数部分的十进制表示。
+它由一个
+<a href="#Floating-point_literals">浮点数字面值</a>
+或二进制整型后面跟一个小字字母 <code>i</code> 构成。
+</p>
+
 <pre class="ebnf">
 imaginary_lit = (decimals | float_lit) "i" .
 </pre>
@@ -348,7 +559,7 @@ imaginary_lit = (decimals | float_lit) "i" .
 </pre>
 
 
-<h3 id="Character_literals">Character literals</h3>
+<h3 id="Character_literals">Character literals 字符字面值</h3>
 
 <p>
 A character literal represents an <a href="#Constants">integer constant</a>,
@@ -358,6 +569,14 @@ quote and newline. A single quoted character represents itself,
 while multi-character sequences beginning with a backslash encode
 values in various formats.
 </p>
+
+<p>
+一个字符表示一个 <a href="#Constants">整型常量</a>，通常是一个 Unicode 代码点，
+用一个或多个包围在单引号中的字符来表示。引号中可以包含除引号和换行之外的任何字符。
+一个用单引号包围起来的字符代表字符本身，而用单引号包围起来的以反斜杠开头的字符序列则
+会根据其不同的格式表示不同的值。
+</p>
+
 <p>
 The simplest form represents the single character within the quotes;
 since Go source text is Unicode characters encoded in UTF-8, multiple
@@ -367,6 +586,15 @@ a literal <code>a</code>, Unicode U+0061, value <code>0x61</code>, while
 <code>'ä'</code> holds two bytes (<code>0xc3</code> <code>0xa4</code>) representing
 a literal <code>a</code>-dieresis, U+00E4, value <code>0xe4</code>.
 </p>
+
+<p>
+最简单的形式就是表示单引号包围的单一字符；由于 Go 的源代码文本是用 UTF-8 编码的 Unicode 字符，
+因此多个 UTF-8 编码的字节可以表示一个整型值。如，字面值 <code>'a'</code>
+用一个字节表示一个文字 <code>a</code>，Unicode U+0061， 值 <code>0x61</code>，而
+<code>'ä'</code> 用两个字节 (<code>0xc3</code> <code>0xa4</code>)
+表示一个文字 <code>a</code>-分音符， U+00E4, 值 <code>0xe4</code>.
+</p>
+
 <p>
 Several backslash escapes allow arbitrary values to be represented
 as ASCII text.  There are four ways to represent the integer value
@@ -377,6 +605,14 @@ plain backslash <code>\</code> followed by exactly three octal digits.
 In each case the value of the literal is the value represented by
 the digits in the corresponding base.
 </p>
+
+<p>
+可以使用多种反斜杠转义格式把任意值表示为 ASCII 文本。有四种方法把整型值表示为数字常量：
+ <code>\x</code> 后面跟两个十六进制数字， <code>\u</code> 后面跟四个十六进制数字，
+<code>\U</code> 后面跟八个十六进制数字以及 <code>\</code> 后面跟三个八进制数字。
+以上形式的表示中，字面值表示的值就是数字在相应的数基中代表的值。
+</p>
+
 <p>
 Although these representations all result in an integer, they have
 different valid ranges.  Octal escapes must represent a value between
@@ -385,9 +621,21 @@ by construction. The escapes <code>\u</code> and <code>\U</code>
 represent Unicode code points so within them some values are illegal,
 in particular those above <code>0x10FFFF</code> and surrogate halves.
 </p>
+
+<p>
+尽管上面几种表示都代表一个整数，但是它们表示的范围不同。八进制的转义序列只能表示
+0 到 255 之间的数。十六进制转义序列也满足这个条件。转义符号 <code>\u</code> 和
+<code>\U</code> 表示合法的 Unicode 代码点的值，通常这个值小于 <code>0x10FFFF</code>
+</p>
+
 <p>
 After a backslash, certain single-character escapes represent special values:
 </p>
+
+<p>
+反斜杠之后，特定的单一字符表示特殊值：
+</p>
+
 <pre class="grammar">
 \a   U+0007 alert or bell
 \b   U+0008 backspace
@@ -403,6 +651,11 @@ After a backslash, certain single-character escapes represent special values:
 <p>
 All other sequences starting with a backslash are illegal inside character literals.
 </p>
+
+<p>
+其它以反斜杠开头的字面值在字符字面值中都是非法的。
+</p>
+
 <pre class="ebnf">
 char_lit         = "'" ( unicode_value | byte_value ) "'" .
 unicode_value    = unicode_char | little_u_value | big_u_value | escaped_char .
@@ -430,13 +683,19 @@ escaped_char     = `\` ( "a" | "b" | "f" | "n" | "r" | "t" | "v" | `\` | "'" | `
 </pre>
 
 
-<h3 id="String_literals">String literals</h3>
+<h3 id="String_literals">String literals 字符串字面值</h3>
 
 <p>
 A string literal represents a <a href="#Constants">string constant</a>
 obtained from concatenating a sequence of characters. There are two forms:
 raw string literals and interpreted string literals.
 </p>
+
+<p>
+字符串字面值表示由字符序列构成的 <a href="#Constants">字符串常量</a>。有两种格式：
+原始字符串字面值和解释字符串字面值。
+</p>
+
 <p>
 Raw string literals are character sequences between back quotes
 <code>``</code>.  Within the quotes, any character is legal except
@@ -445,6 +704,14 @@ string composed of the uninterpreted characters between the quotes;
 in particular, backslashes have no special meaning and the string may
 span multiple lines.
 </p>
+
+<p>
+原始字符串是放在反引号 <code>``</code> 之间的字符序列。
+在反引号之间可以放置除反引号本身之外的任意字符。
+原始字符串字面值表示的值就是由反引号之间的字符组成的字符串。
+特别是，原始字符串中反斜杠没有特殊含义，可以跨跃多行。
+</p>
+
 <p>
 Interpreted string literals are character sequences between double
 quotes <code>&quot;&quot;</code>. The text between the quotes,
@@ -460,6 +727,18 @@ a single byte of value <code>0xFF</code>=255, while <code>ÿ</code>,
 <code>\u00FF</code>, <code>\U000000FF</code> and <code>\xc3\xbf</code> represent
 the two bytes <code>0xc3</code> <code>0xbf</code> of the UTF-8 encoding of character
 U+00FF.
+</p>
+
+<p>
+解释字符串字面值就是双引号 <code>&quot;&quot;</code> 之间的字符序列。引号之间的文本不可以跨跃多行，
+字面值的值就是被解释过后的文本的值，反斜杠转义字符会被当成字符来解释（除开 <code>\'</code> 是非法的，
+但是 <code>\"</code> 是合法的）。三位八进制数 (<code>\</code><i>nnn</i>)
+和两位十六进制数 (<code>\x</code><i>nn</i>) 分别代表它们对应的字符的 <i>字节码</i>；
+所有其它的转义代表一个（可能是多字节的）UTF-8 编码的 <i>字符</i>。
+因此在字符串字面值内部 <code>\377</code> 和 <code>\xFF</code>
+就代表点一个字节的值 <code>0xFF</code>=255，
+而  <code>ÿ</code>、<code>\u00FF</code>、<code>\U000000FF</code> 和 <code>\xc3\xbf</code> 
+代表占两个字节 <code>0xc3</code> <code>0xbf</code> 的 UTF-8 编码字符 U+00FF。
 </p>
 
 <pre class="ebnf">
@@ -484,6 +763,10 @@ interpreted_string_lit = `"` { unicode_value | byte_value } `"` .
 These examples all represent the same string:
 </p>
 
+<p>
+下面的示例都代表相同的字符串：
+</p>
+
 <pre>
 "日本語"                                 // UTF-8 input text
 `日本語`                                 // UTF-8 input text as a raw literal
@@ -500,14 +783,25 @@ point), and will appear as two code points if placed in a string
 literal.
 </p>
 
+<p>
+如果源代码中用两个代码点来表示一个字符（比如用重音和字母组合成一个字符），
+如果出现在字符字面值中会是一个错误，因为字符字面值中不可以有两个字符。
+如果出现在字符串中，将表示两个代码点。
+</p>
 
-<h2 id="Constants">Constants</h2>
+
+<h2 id="Constants">Constants 常量</h2>
 
 <p>There are <i>boolean constants</i>, <i>integer constants</i>,
 <i>floating-point constants</i>, <i>complex constants</i>,
 and <i>string constants</i>. Integer, floating-point,
 and complex constants are
 collectively called <i>numeric constants</i>.
+</p>
+
+<p>有 <i>布尔常量</i>、<i>整型常量</i>、
+<i>浮点常量</i>、<i>复数常量</i>
+和 <i>字符串常量</i>。整型常量、浮点常量和复数常量统称 <i>数字常量</i>。
 </p>
 
 <p>
@@ -530,9 +824,33 @@ The boolean truth values are represented by the predeclared constants
 </p>
 
 <p>
+常量的值用
+<a href="#Integer_literals">整型</a>、
+<a href="#Floating-point_literals">浮点型</a>、
+<a href="#Imaginary_literals">虚数型</a>、
+<a href="#Character_literals">字符型</a> 或
+<a href="#String_literals">字符串型</a> 字面值表示，
+一个标识符就代表一个常量，
+一个 <a href="#Constant_expressions">量常表达式</a>，
+或内建函数的返回值比如应用于数组的 <code>unsafe.Sizeof</code>
+和 <code>cap</code> 或 <code>len</code>，
+应用于字符串常量的 <code>len</code>，
+应用于复数常量的 <code>real</code> 和 <code>imag</code>
+和应用于数字的 <code>cmplx</code>。
+布尔真值用两个预定义的常量 <code>true</code> 和 <code>false</code> 来表示。
+预定义标识符 <a href="#Iota">iota</a> 代表一个整型常量。
+</p>
+
+<p>
 In general, complex constants are a form of
 <a href="#Constant_expressions">constant expression</a>
 and are discussed in that section.
+</p>
+
+<p>
+一般来说，复数常量由
+<a href="#Constant_expressions">常量表达式</a>
+组成，这会在相应章节有详细说明。
 </p>
 
 <p>
@@ -540,10 +858,21 @@ Numeric constants represent values of arbitrary precision and do not overflow.
 </p>
 
 <p>
+数字常量可以表示任意精度并且不会溢出。
+</p>
+
+<p>
 Constants may be <a href="#Types">typed</a> or untyped.
 Literal constants, <code>true</code>, <code>false</code>, <code>iota</code>,
 and certain <a href="#Constant_expressions">constant expressions</a>
 containing only untyped constant operands are untyped.
+</p>
+
+<p>
+常量分为 <a href="#Types">有类型</a> 和无类型两种。
+字面常量、<code>true</code>、<code>false</code>、<code>iota</code>
+和特定的 <a href="#Constant_expressions">常量表达式</a>
+仅包含操作符是无类型的无类型量常。
 </p>
 
 <p>
@@ -560,6 +889,17 @@ can be given the types <code>float32</code>, <code>float64</code>, or <code>uint
 not <code>int32</code> or <code>string</code>.
 </p>
 
+
+<p>
+常量可以通过 <a href="#Constant_declarations">常量声明</a>、
+<a href="#Conversions">转换</a>、
+<a href="#Variable_declarations">变量声明</a> 时的隐式转换、
+<a href="#Assignments">赋值</a>、
+或作为 <a href="#Expressions">表达式</a> 中的操作数来显示的获得类型，
+如果常量的值与其类型不相同的话，会出现错误。
+如，<code>3.0</code> 可以看做是整型或浮点型，而 <code>2147483648.0</code> (等于 <code>1&lt;&lt;31</code>) 可以被看做是 <code>float32</code>、<code>float64</code>或 <code>uint32</code> 类型，但不可以看做 <code>int32</code> 或 <code>string</code> 类型。
+</p>
+
 <p>
 There are no constants denoting the IEEE-754 infinity and not-a-number values,
 but the <a href="/pkg/math/"><code>math</code> package</a>'s
@@ -571,9 +911,24 @@ functions return and test for those values at run time.
 </p>
 
 <p>
+没有专门用来表示 IEEE-754 中定义的无穷和非数字值的常量，
+但是 <a href="/pkg/math/"><code>math</code> 包</a> 的
+<a href="/pkg/math/#Inf">Inf</a>、
+<a href="/pkg/math/#NaN">NaN</a>、
+<a href="/pkg/math/#IsInf">IsInf</a> 和
+<a href="/pkg/math/#IsNaN">IsNaN</a>
+方法会在运行时测试和返回这些值。
+</p>
+
+<p>
 Implementation restriction: A compiler may implement numeric constants by choosing
 an internal representation with at least twice as many bits as any machine type;
 for floating-point values, both the mantissa and exponent must be twice as large.
+</p>
+
+<p>
+实现限制：编译器可以选择至少两倍于机器类型大小的位数来代表数字常量；
+如浮点值，尾数和指数都必须是其两倍。
 </p>
 
 
