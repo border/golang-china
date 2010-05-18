@@ -304,10 +304,10 @@ distinct types; even if "int" and "int32" are both 32 bits in size,
 they are not the same type.  There is also a "byte" synonym for
 "uint8", which is the element type for strings.
 
-Go语言中有一些通用的类型，例如"int"和"float"，它们不同机器上占用适当空间大小。同时，
-也包含了许多大小固定的类型，例如"int8"和"float64"，还有无符号类型"uint"和"uint32"。
-需要注意的是，"int"和"int32"虽然占有同样的内存大小，但是却不是同一种数据类型。不过
-"byte"和"uint8"却是相同的类型，它们是字符串中字符类型。
+Go语言中有一些通用的类型，例如"int"和"float"，它们对应的内存大小和处理器类型相关。同时，
+也包含了许多固定大小的类型，例如"int8"和"float64"，还有无符号类型"uint"和"uint32"等。
+需要注意的是，即使"int"和"int32"占有同样的内存大小，但并不是同一种数据类型。不过
+"byte"和"uint8"对应是相同的数据类型，它们是字符串中字符类型。
 
 Speaking of "string", that's a built-in type as well.  Strings are
 <i>immutable values</i>&mdash;they are not just arrays of "byte" values.
@@ -315,16 +315,16 @@ Once you've built a string <i>value</i>, you can't change it, although
 of course you can change a string <i>variable</i> simply by
 reassigning it.  This snippet from "strings.go" is legal code:
 
-说道字符串"string"，它是一个内建类型。字符串虽然是字符序列，但并不是一个字符数组。
-当你建立字符串之后，你就不能改变字符串中的元素。不过可以通过指定新字符串来改变它。
-下面列举"strings.go"例子说明字符串的用法：
+go中的字符串是一个内建数据类型。字符串虽然是字符序列，但并不是一个字符数组。可以创建新的
+字符串，但是不能改变字符串。不过我们可以通过新的字符串来达到想改变字符串的目的。
+下面列举"strings.go"例子说明字符串的常见用法：
 
 --PROG progs/strings.go /hello/ /ciao/
 
 However the following statements are illegal because they would modify
 a "string" value:
 
-不管如何，下面的用法是禁止的，因为它们试图修改字符串的字符元素的值：
+不管如何，试图修改字符串的做法都是被禁止的：
 
 	s[0] = 'x';
 	(*p)[1] = 'y';
@@ -332,13 +332,13 @@ a "string" value:
 In C++ terms, Go strings are a bit like "const strings", while pointers
 to strings are analogous to "const string" references.
 
-Go中的字符串和C++中的"const strings"概念类似，字符串指针和C++中的"const strings"
-引用类似。
+Go中的字符串和C++中的"const strings"概念类似，字符串指针则相当于C++中的"const strings"
+引用。
 
 Yes, there are pointers.  However, Go simplifies their use a little;
 read on.
 
-是的，它们都是是指针，虽然Go中更简化一些。
+是的，它们都是指针，但是Go中用法更简单一些。
 
 Arrays are declared like this:
 
@@ -351,9 +351,8 @@ from C, in which "arrayOfInt" would be usable as a pointer to "int".
 In Go, since arrays are values, it's meaningful (and useful) to talk
 about pointers to arrays.
 
-数组和字符串一样是一个值对象，但是数组是可以修改的。但是不同于C语言，"int"类型数组
-"arrayOfInt"并不能转化为"int"指针。因为，在Go语言中数组是一个值对象，它在内部保存
-"int"指针。
+数组和字符串一样也是一个值对象，不过数组的元素是可以修改的。不同于C语言的是："int"类型数组
+"arrayOfInt"并不能转化为"int"指针。因为，在Go语言中数组是一个值对象，它在内部保存"int"指针。
 
 The size of the array is part of its type; however, one can declare
 a <i>slice</i> variable, to which one can assign a pointer to
@@ -367,10 +366,11 @@ an underlying, often anonymous, regular array.  Multiple slices
 can share data if they represent pieces of the same array;
 multiple arrays can never share data.
 
-数组的大小是数组变量的一部分。但是我们可以通过定义一个<i>slice</i>变量，来对数据进行
-操作。一个<i>slice</i>表示"a[low : high]"，它是对数组一部分的引用。Slices虽然看起来
-和数组类似，但是它并没有自己的内存空间，相反它在底层关引用一段内存。多个Slices如果引用同
-一个数组可以共享数组，但是多个数组则不可能共享数据。
+数组的大小是数组类型的一部分。我们还可以通过<i>slice（切片）</i>类型的变量来访问数组。
+首先，数据元素的类型要和<i>slice（切片）</i>类型相同，然后通过"a[low : high]"类似的
+语法来关联数组的low到heigh-1的子区间元素。Slices和数组的声明语法类似，但是不像数组那样
+要指定元素的个数（"[]"和"[10]"的区别）；它在内部引用特定的空间，或者其它数组的空间。
+如果多个Slices引用同一个数组，则可以共享数组的空间。但是不同数组之间是无法共享内存空间的。
 
 Slices are much more common in Go programs than
 regular arrays; they're more flexible, have reference semantics,
@@ -379,8 +379,9 @@ layout of a regular array; if you want to have a hundred elements
 of an array stored within your structure, you should use a regular
 array.
 
-在Go中Slices使用的更为普遍，因为它更有弹性，同时也具有效率。但是，Slices缺少对内存的绝对
-控制。如果你只是想要一个可以存放100个元素，那么你就应该选择数组了。
+在Go语言中Slices比数组使用的更为普遍，因为它更有弹性，引用的语法也使得它效率很高。
+但是，Slices缺少对内存的绝对控制比数组要差一些。例如你只是想要一个可以存放100个元素
+的空间，那么你就可以选择数组了。
 
 When passing an array to a function, you almost always want
 to declare the formal parameter to be a slice.  When you call
