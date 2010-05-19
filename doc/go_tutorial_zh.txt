@@ -393,13 +393,13 @@ create (efficiently) a slice reference and pass that.
 
 Using slices one can write this function (from "sum.go"):
 
-使用slices可以写出以下函数（来自"sum.go"）：
+比如以下函数以slices类型为参数（来自"sum.go"）：
 
 --PROG progs/sum.go /sum/ /^}/
 
 and invoke it like this:
 
-可以这样调用：
+可以用数组的地址为参数调用：
 
 --PROG progs/sum.go /1,2,3/
 
@@ -413,14 +413,14 @@ Putting an "&amp;"
 in front gives us the address of a unique instance of the value.  We pass the
 pointer to "sum()" by (implicitly) promoting it to a slice.
 
-函数的返回值类型在参数列表后定义。表达式"[3]int{1,2,3}"定义一个含有3个"int"类型元素的数组
+函数的返回值类型在参数列表之后定义。表达式"[3]int{1,2,3}"定义一个含有3个"int"类型元素的数组
 （并且已经初始化），然后用"&amp;"来获取数组的地址。我们用数组指针作为参数调用"sum()"，数组
 指针被自动转换为slice类型。
 
 If you are creating a regular array but want the compiler to count the
 elements for you, use "..." as the array size:
 
-如果你创建一个初始化的数组，你可以倚赖编译起计算数组的元素数目，只要在数组大小中填写"..."就
+如果你创建一个初始化的数组，你可以让编译器自动计算数组的元素数目，只要在数组大小中填写"..."就
 可以了：
 
 	s := sum(&amp;[...]int{1,2,3});
@@ -429,8 +429,7 @@ In practice, though, unless you're meticulous about storage layout within a
 data structure, a slice itself&mdash;using empty brackets and no
 "&amp;"&mdash;is all you need:
 
-在编码时，除非需要精确控制内存布局；简单的方式是用slice（数组大小为空）作为参数，并且不需要
-取数组的地址。
+是实际编码中，如果不关心内存的具体细节，可以用slice类型（省略数组的大小）来代替数组地址为函数参数：
 
 	s := sum([]int{1,2,3});
 
@@ -444,20 +443,20 @@ The built-in function "len()", which returns number of elements,
 makes its first appearance in "sum".  It works on strings, arrays,
 slices, maps, and channels.
 
-用内建的"len()"函数，可以获取元素的数目，该函数在前面的"sum"中用到过。"len()"函数
+用内建的"len()"函数，可以获取map中元素的数目，该函数在前面的"sum"中用到过。"len()"函数
 还可以用在strings, arrays, slices, maps, 和 channels 中。
 
 By the way, another thing that works on strings, arrays, slices, maps
 and channels is the "range" clause on "for" loops.  Instead of writing
 
-还有另外"range"方法可以用到strings, arrays, slices, maps, 和 channels 中，
-它可以用于"for"循环的迭代。以下代码
+还有另外的"range"语法可以用到strings, arrays, slices, maps, 和 channels 中，
+它可以用于"for"循环的迭代。例如以下代码
 
 	for i := 0; i &lt; len(a); i++ { ... }
 
 to loop over the elements of a slice (or map or ...) , we could write
 
-也可以写成：
+用"range"语法可以写成：
 
 	for i, v := range a { ... }
 
@@ -469,7 +468,7 @@ for more examples of its use.
 这里的"i"对应元素的索引，"v"对应元素的值。关于更多的细节可以参考
 <a href='/doc/effective_go.html'>Effective Go</a>。
 
-An Interlude about Allocation
+An Interlude about Allocation 申请内存
 ----
 
 Most types in Go are values. If you have an "int" or a "struct"
@@ -477,15 +476,16 @@ or an array, assignment
 copies the contents of the object.
 To allocate a new variable, use "new()", which
 returns a pointer to the allocated storage.
-在Go语言中，大部分的类型都是变量。如果你有个int或struct(结构体)或
-array(数组)的变量，你需要拷贝他们的内容到一个新对象中，并重新分配一个
-新的变量，就用new(), 它的返回值是一个指向被分配地址空间的指针。
+
+在Go语言中，大部分的类型都是值变量。例如int或struct(结构体)或array(数组)类型变量，
+赋值的时候都是复制整个元素。如果需要为一个值类型的变量分配空间，可以用new()：
 
 	type T struct { a, b int }
 	var t *T = new(T);
 
 or the more idiomatic
-或者用别的方法
+
+或者更简洁的写法：
 
 	t := new(T);
 
@@ -493,34 +493,37 @@ Some types&mdash;maps, slices, and channels (see below)&mdash;have reference sem
 If you're holding a slice or a map and you modify its contents, other variables
 referencing the same underlying data will see the modification.  For these three
 types you want to use the built-in function "make()":
-有一些类型，如: maps, slices 和 channels(见下面)有reference semantics(引用语意).
-如果你修改了slice 或 map相关的内容，其他引用了这些数据的变量也能看到这个改变。对于
-这三个类型你得使用另一个内建的函数make()
+
+还有另外一些类型，如：maps, slices 和 channels(见下面)是引用语意（reference semantics）。
+如果你一个slice 或 map内的元素，那么其他引用了相同slice 或 map的变量也能看到这个改变。
+对于这三类引用类型的变量，需要用另一个内建的make()分配并初始化空间：
 
 	m := make(map[string]int);
 
 This statement initializes a new map ready to store entries.
 If you just declare the map, as in
-上面的语句初始化一个新的map并分配了存储空间
-如果你只想声明一个map，代码如下:
+
+上目的代码定义一个新的map并分配了存储空间。如果只是定一个map而不想分配空间的话，可以这样：
 
 	var m map[string]int;
 
 it creates a "nil" reference that cannot hold anything. To use the map,
 you must first initialize the reference using "make()" or by assignment from an
 existing map.
+
 它创建了一个nil(空的)引用并且没有分配存储空间。如果你想用这个map, 你必须使用make来
-初始化引用或者指向一个已经存在的map。
+分配并初始化内存空间或者指向一个已经有存储空间的map。
 
 Note that "new(T)" returns type "*T" while "make(T)" returns type
 "T".  If you (mistakenly) allocate a reference object with "new()",
 you receive a pointer to a nil reference, equivalent to
 declaring an uninitialized variable and taking its address.
-注意: new(T)返回的类型是*T, 而make(T)返回的是T. 如果你(错误的)使用new()分配
-了一个引用对象，你将会得到一个指向nil引用的指针。这个相当于声明了一个未初始化
-的变量并取得它的地址.
 
-An Interlude about Constants
+注意: new(T)返回的类型是*T, 而make(T)返回的是引用语意的T。如果你(错误的)使用new()分配
+了一个引用对象，你将会得到一个指向nil引用的指针。这个相当于声明了一个未初始化引用变量并取得
+它的地址。
+
+An Interlude about Constants 常量
 ----
 
 Although integers come in lots of sizes in Go, integer constants do not.
@@ -528,15 +531,17 @@ There are no constants like "0LL" or "0x0UL".   Instead, integer
 constants are evaluated as large-precision values that
 can overflow only when they are assigned to an integer variable with
 too little precision to represent the value.
-虽然在Go中整数(integer)占用了大量的空间，但是常量类型的整数并没有占用很多空间。
-这里没有像0LL 或 0x0UL的常量，取而代之的是，使用整数常量作为大型高精度的值，只有当
-他们被重新定义给另一个变量的时候才能超载.
 
-	const hardEight = (1 &lt;&lt; 100) &gt;&gt; 97  // legal
+虽然在Go中整数(integer)占用了大量的空间，但是常量类型的整数并没有占用很多空间。
+这里没有像0LL 或 0x0UL的常量，取而代之的是使用整数常量作为大型高精度的值。常量只有
+在最终被赋值给一个变量的时候才可以会出现溢出的情况：
+
+	const hardEight = (1 &lt;&lt; 100) &gt;&gt; 97  // legal，合法
 
 There are nuances that deserve redirection to the legalese of the
 language specification but here are some illustrative examples:
-这里重新定义和语言规范还是有些差别，下面是说明和规则:
+
+具体的语法细节比较琐屑，下面是一些简单的例子：
 
 	var a uint64 = 0  // a has type uint64, value 0
 	a := uint64(0)    // equivalent; uses a "conversion"
@@ -551,9 +556,10 @@ sign or size to another, and between "ints" and "floats", plus a few other
 simple cases.  There are no automatic numeric conversions of any kind in Go,
 other than that of making constants have concrete size and type when
 assigned to a variable.
-转换只能简单的使用，比如: 转换整数(int)到去其他的精度和大小，整数(int)与
-浮点数(float), 还有其他一些简单类型。Go 里面没有任何自动数值转换，除了此处以为
-由常数建立的变量是需要确定大小和类型.
+
+（强制？）转换只适用于几种简单的情况：转换整数(int)到去其他的精度和大小，整数(int)与
+浮点数(float)的转换, 还有其他一些简单情形。在Go语言中，系统不会对两种不同类型变量作
+任何隐式的类型转换。此外，由常数初始化的变量需要指定确定的类型和大小。
 
 An I/O Package
 ----
