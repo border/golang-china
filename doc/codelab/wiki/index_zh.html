@@ -173,8 +173,19 @@ no parameters, and returns a value of type <code>os.Error</code>."
 </p>
 
 <p>
+类型方法解读：<code>save</code>为<code>page</code>类型的方法，方法的调用者对应
+<code>page</code>类型变量p。该成员函数没有参数，返回值为<code>os.Error</code>，表示
+错误信息。
+</p>
+
+<p>
 This method will save the <code>page</code>'s <code>body</code> to a text 
 file. For simplicity, we will use the <code>title</code> as the file name.
+</p>
+
+<p>
+该方法会将<code>page</code>结构的<code>body</code>部分保存到文本文件中。为了简单，
+我们用<code>title</code> 作为文本文件的名字。
 </p>
 
 <p>
@@ -188,6 +199,12 @@ types).
 </p>
 
 <p>
+方法<code>save</code>返回的<code>os.Error</code>对应<code>WriteFile</code>的
+返回值。通过返回<code>os.Error</code>值，可以判断发生错误的类型。如果没有错误，那么
+返回<code>nil</code> 。
+</p>
+
+<p>
 The octal integer constant <code>0600</code>, passed as the third parameter to
 <code>WriteFile</code>, indicates that the file should be created with
 read-write permissions for the current user only. (See the Unix man page
@@ -195,8 +212,18 @@ read-write permissions for the current user only. (See the Unix man page
 </p>
 
 <p>
+<code>WriteFile</code>的第三个参数为八进制的<code>0600</code>，表示新创建文件的读写
+权限。
+</p>
+
+<p>
 We will want to load pages, too:
 </p>
+
+<p>
+下面的函数对应读一个页面：
+</p>
+
 
 <pre>
 func loadPage(title string) *page {
@@ -213,6 +240,11 @@ The function <code>loadPage</code> constructs the file name from
 </p>
 
 <p>
+函数<code>loadPage</code>根据页面标题从对应文件读取页面的内容，并且构造一个新的
+<code>page</code>变量——对应一个页面。
+</p>
+
+<p>
 Functions can return multiple values. The standard library function 
 <code>io.ReadFile</code> returns <code>[]byte</code> and <code>os.Error</code>. 
 In <code>loadPage</code>, error isn't being handled yet; the "blank identifier"
@@ -221,9 +253,20 @@ error return value (in essence, assigning the value to nothing).
 </p>
 
 <p>
+go中函数（以及成员方法）可以返回多个值。标准库中的<code>io.ReadFile</code>就返回
+<code>[]byte</code>的同时还返回<code>os.Error</code>类型的错误信息。前面的代码中
+我们用下划线(<code>_</code>)丢弃了错误信息。
+</p>
+
+<p>
 But what happens if <code>ReadFile</code> encounters an error?  For example,
 the file might not exist. We should not ignore such errors.  Let's modify the
 function to return <code>*page</code> and <code>os.Error</code>.
+</p>
+
+<p>
+但是如果<code>ReadFile</code>可能会发生错误，例如请求的也没并不存在。因此，我们给函数的
+返回值增加一个错误信息。
 </p>
 
 <pre>
@@ -246,9 +289,19 @@ details).
 </p>
 
 <p>
+现在调用者可以检测第二个返回值，如果为<code>nil</code>就表示成功装载页面。关于错误的
+更多信息可以参考<a
+href="http://golang.org/pkg/os/#Error">os package documentation</a>。
+</p>
+
+<p>
 At this point we have a simple data structure and the ability to save to and
 load from a file. Let's write a <code>main</code> function to test what we've
 written:
+</p>
+
+<p>
+现在我们可以编写一个简单的<code>main</code>函数，有页面的保存和读取功能。
 </p>
 
 <pre>
@@ -268,7 +321,17 @@ printed to the screen.
 </p>
 
 <p>
+编译后运行以上程序的话，会创建一个<code>TestPage.txt</code>文件，用于保存<code>p1</code>
+对应的页面内容。然后，从文件读取页面内容到<code>p2</code>，并且将<code>p2</code>的值打印到
+屏幕。
+</p>
+
+<p>
 You can compile and run the program like this: 
+</p>
+
+<p>
+可以用类似以下命令编译运行程序：
 </p>
 
 <pre>
@@ -285,10 +348,19 @@ substitute 6's for the 8's.)
 </p>
 
 <p>
+(命令<code>8g</code> and <code>8l</code>对应<code>GOARCH=386</code>。
+如果是<code>amd64</code>系统，可以用6g和6l)
+</p>
+
+<p>
 <a href="part1.go">Click here to view the code we've written so far.</a>
 </p>
 
-<h2>Introducing the <code>http</code> package (an interlude)</h2>
+<p>
+<a href="part1.go">浏览代码</a>
+</p>
+
+<h2>Introducing the <code>http</code> package (an interlude) 使用http包</h2>
 
 <p>
 Here's a full working example of a simple web server:
