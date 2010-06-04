@@ -366,6 +366,10 @@ substitute 6's for the 8's.)
 Here's a full working example of a simple web server:
 </p>
 
+<p>
+下面是一个完整的web server例子：
+</p>
+
 <pre>
 package main
 
@@ -392,10 +396,20 @@ handle all requests to the web root (<code>"/"</code>) with
 </p>
 
 <p>
+在<code>main</code>中，<code>http.HandleFunc</code>设置所有的请求作为根目录处理，
+处理函数是<code>handler</code>。
+</p>
+
+<p>
 It then calls <code>http.ListenAndServe</code>, specifying that it should
 listen on port 8080 on any interface (<code>":8080"</code>). (Don't
 worry about its second parameter, <code>nil</code>, for now.)
 This function will block until the program is terminated.
+</p>
+
+<p>
+然后调用<code>http.ListenAndServe</code>开始监听，监听端口为8080（第二个参数暂时可以忽略）。
+然后程序将阻塞，直到退出。
 </p>
 
 <p>
@@ -405,8 +419,17 @@ arguments.
 </p>
 
 <p>
+函数<code>handler</code>为<code>http.HandlerFunc</code>类型，它包含
+<code>http.Conn</code>和<code>http.Request</code>两个类型的参数。
+</p>
+
+<p>
 An <code>http.Conn</code> is the server end of an HTTP connection; by writing 
 to it, we send data to the HTTP client.
+</p>
+
+<p>
+其中<code>http.Conn</code>对应服务器的http连接，我们可以通过它向客户端发送数据。
 </p>
 
 <p>
@@ -418,18 +441,39 @@ This drops the leading "/" from the path name.
 </p>
 
 <p>
+类型为<code>http.Request</code>的参数对应一个客户端请求。其中<code>r.URL.Path</code>
+为请求的地址，它是一个string类型变量。我们用<code>[1:]</code>在<code>Path</code>上创建
+一个slice，对应"/"之后的路径名。
+</p>
+
+<p>
 If you run this program and access the URL: 
 </p>
+
+<p>
+启动该程序后，通过浏览器访问以下地址：
+</p>
+
 <pre>http://localhost:8080/monkeys</pre>
+
 <p>
 the program would present a page containing:
 </p>
+
+<p>
+会看到以下输出内容：
+</p>
+
 <pre>Hi there, I love monkeys!</pre>
 
-<h2>Using <code>http</code> to serve wiki pages</h2>
+<h2>Using <code>http</code> to serve wiki pages 基于http提供wiki页面 </h2>
 
 <p>
 To use the <code>http</code> package, it must be imported:
+</p>
+
+<p>
+要使用<code>http</code>包，需要先导入：
 </p>
 
 <pre>
@@ -443,6 +487,10 @@ import (
 
 <p>
 Let's create a handler to view a wiki page: 
+</p>
+
+<p>
+然后创建一个用于浏览wiki的函数：
 </p>
 
 <pre>
