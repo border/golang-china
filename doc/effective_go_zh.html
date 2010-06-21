@@ -104,7 +104,7 @@ seem right, fix the program (or file a bug), don't work around it.
 
 对于Go语言，我们采用不同的处理方法：让机器处理绝大部分的格式化工作。工具程序
 <code>gofmt</code>可以根据需要将Go代码格式自动格式化为统一的风格。如果你想
-了解格式化后代码的所进方式，你可以直接运行<code>gofmt</code>，然后查看输出结果。
+了解格式化后代码的缩进方式，你可以直接运行<code>gofmt</code>，然后查看输出结果。
 </p>
 
 <p>
@@ -734,7 +734,7 @@ It's therefore possible&mdash;and idiomatic&mdash;to write an
 chain as a <code>switch</code>.
 </p>
 <p>
-Go中的<code>switch</code>要不C更全面，它的表达式比仅仅只有常数或整数。
+Go中的<code>switch</code>要比C更全面，C的表达式仅仅只有常数或整数。
 每个分支(cases)从上到下进行匹配取值, 如果<code>switch</code>没有表达式
 那么switches是真。所有才有可能使用<code>switch</code>替换<code><if-else-if-else/code>
 </p>
