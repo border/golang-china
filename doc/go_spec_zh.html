@@ -925,14 +925,17 @@ for floating-point values, both the mantissa and exponent must be twice as large
 如浮点值，尾数和指数都必须是其两倍。
 </p>
 
-
-<h2 id="Types">Types</h2>
+<h2 id="Types">Types 类型</h2>
 
 <p>
 A type determines the set of values and operations specific to values of that
 type.  A type may be specified by a (possibly qualified) <i>type name</i>
 (§<a href="#Qualified_identifier">Qualified identifier</a>, §<a href="#Type_declarations">Type declarations</a>) or a <i>type literal</i>,
 which composes a new type from previously declared types.
+</p>
+
+<p>
+类型决定了数据集及应用于该类型数据的操作。类型可以用一个（合法的） <i>类型名</i> (§<a href="#Qualified_identifier">合格标识</a>， §<a href="#Type_declarations">类型声明</a>) 或一个 <i>类型字面值</i> 来指定，新类型是由已经声明的类型组成。
 </p>
 
 <pre class="ebnf">
@@ -951,6 +954,10 @@ type literals.
 </p>
 
 <p>
+布尔、数字和字符串的命名实例是<a href="#Predeclared_identifiers">预声明的</a>。<i>复合类型</i>—数组、结构体、指针、函数、接口、切片、映射和管道类型—都可以用类型字面值在构造。
+</p>
+
+<p>
 A type may have a <i>method set</i> associated with it
 (§<a href="#Interface_types">Interface types</a>, §<a href="#Method_declarations">Method declarations</a>).
 The method set of an <a href="#Interface_types">interface type</a> is its interface.
@@ -962,6 +969,11 @@ is the set of all methods with receiver <code>*T</code> or <code>T</code>
 Any other type has an empty method set.
 In a method set, each method must have a unique name.
 </p>
+
+<p>
+类型可以有一个 <i>方法集</i>（§<a href="#Interface_types">接口类型</a>，§<a href="#Method_declarations">方法声明</a>）。<a href="#Interface_types">接口类型</a> 的方法集就是它的接口。类型 <code>T</code> 的方法集由所有接收器是类型 <code>T</code> 的方法构成。指针类型 <code>*T</code> 对应的方法集由所有接收器是类型 <code>T</code> 或 <code>*T</code> 的方法构成（也就是说它包含类型 <code>T</code> 的方法集）。其它的类型有空的方法集。在一个方法集中，每一个方法的名字必须是唯一的。
+</p>
+
 <p>
 The <i>static type</i> (or just <i>type</i>) of a variable is the
 type defined by its declaration.  Variables of interface type
@@ -972,6 +984,10 @@ to the static type of the interface variable.  For non-interface
 types, the dynamic type is always the static type.
 </p>
 
+<p>
+变量的 <i>静态类型</i> (或者只是 <i>类型</i>) 就是它在声明的时候被定义的类型。接口的变量拥有一个不同的 <i>动态类型</i>，这个变量的类型就是运行时存储在该变量中的值的类型。动态类型可以在执行的时候改变，但是它总是和接口变量的静态类型赋值兼容。对于非接口类型来说，动态类型总是静态类型。
+</p>
+
 
 <h3 id="Boolean_types">Boolean types</h3>
 
@@ -979,12 +995,19 @@ A <i>boolean type</i> represents the set of Boolean truth values
 denoted by the predeclared constants <code>true</code>
 and <code>false</code>. The predeclared boolean type is <code>bool</code>.
 
+<p>
+<i>布尔类型</i> 代表布尔真值集合，真值用预定义的常量 <code>true</code> 和 <code>false</code> 标记。预定义的布尔类型是 <code>bool</code>。
+</p>
 
-<h3 id="Numeric_types">Numeric types</h3>
+<h3 id="Numeric_types">Numeric types 数字类型</h3>
 
 <p>
 A <i>numeric type</i> represents sets of integer or floating-point values.
 The predeclared architecture-independent numeric types are:
+</p>
+
+<p>
+<i>数字类型</i> 表示整型或浮点型值的集合。预定义的平台独立的数字类型有：
 </p>
 
 <pre class="grammar">
@@ -1013,7 +1036,15 @@ The value of an <i>n</i>-bit integer is <i>n</i> bits wide and represented using
 </p>
 
 <p>
+<i>n</i> 位整型的值占用 <i>n</i> 个字节宽度，并用 <a href="http://en.wikipedia.org/wiki/Two%27s_complement">2的补码运算</a> 表示。
+</p>
+
+<p>
 There is also a set of predeclared numeric types with implementation-specific sizes:
+</p>
+
+<p>
+也有一些预定义数字类型的宽度是根据具体实现来定的:
 </p>
 
 <pre class="grammar">
@@ -1032,15 +1063,24 @@ are required when incompatible numeric types are mixed in an expression
 or assignment. For instance, <code>int32</code> and <code>int</code>
 are not the same type even though they may have the same size on a
 particular architecture.
+</p>
 
+<p>
+为了避免移植问题，规定除了作为 <code>uint8</code> 的别名的 <code>byte</code> 外，所有数字类型都是不相同的。不兼容的数字类型在赋值时或者混合在同一个表达式中时，需要进行转换。如，尽管在某些特别的构架体系中 <code>int32</code> 与 <code>int</code> 具有相同大小，但是它们不是相同的类型。
+</p>
 
-<h3 id="String_types">String types</h3>
+<h3 id="String_types">String types 字符串类型</h3>
 
 <p>
 A <i>string type</i> represents the set of string values.
 Strings behave like arrays of bytes but are immutable: once created,
 it is impossible to change the contents of a string.
 The predeclared string type is <code>string</code>.
+</p>
+
+<p>
+<i>字符串类型</i> 表示字符串值的集合。字符串的行为和字节数组相似，但是它不可变：一旦创建，它的内容就不能再被改变。预定义的字符串类型是 <code>string</code>。
+</p>
 
 <p>
 The elements of strings have type <code>byte</code> and may be
@@ -1053,14 +1093,22 @@ string, <code>&amp;s[i]</code> is invalid.  The length of string
 is a string literal.
 </p>
 
+<p>
+字符串的元素是 <code>byte</code> 类型，可以通过常用的 <a href="#Indexes">索引操作</a> 访问。访问元素的地址是非法的；如果 <code>s[i]</code> 是字符串的第 <i>i</i> 个字节，<code>&amp;s[i]</code> 是非法的。字符串 <code>s</code> 的长度可以使用内建函数 <code>len</code> 得到。如果 <code>s</code> 是一个字符串字面值，它的长度是一个编译时常量。
+</p>
 
-<h3 id="Array_types">Array types</h3>
+
+<h3 id="Array_types">Array types 数组类型</h3>
 
 <p>
 An array is a numbered sequence of elements of a single
 type, called the element type.
 The number of elements is called the length and is never
 negative.
+</p>
+
+<p>
+数组是编了号的某一类型的元素的序列，该类型被叫做元素类型。元素的个数叫做数组长度，不可能为负数。
 </p>
 
 <pre class="ebnf">
@@ -1080,6 +1128,10 @@ Array types are always one-dimensional but may be composed to form
 multi-dimensional types.
 </p>
 
+<p>
+长度是数组的类型的一部分，必须是一个值为非负的 <a href="#Constant_expressions">常量表达式</a>。数组 <code>a</code> 的长度可以通过内建函数 <code>len(a)</code>得到，它是一个编译时常量。元素可以使用0到 <code>len(a)-1</code> 的整数来索引(§<a href="#Indexes">索引</a>)。数组类型总是一维的，但是可以使用多维类型来构建。
+</p>
+
 <pre>
 [32]byte
 [2*N] struct { x, y int32 }
@@ -1088,13 +1140,17 @@ multi-dimensional types.
 [2][2][2]float64  // same as [2]([2]([2]float64))
 </pre>
 
-<h3 id="Slice_types">Slice types</h3>
+<h3 id="Slice_types">Slice types 切片类型</h3>
 
 <p>
 A slice is a reference to a contiguous segment of an array and
 contains a numbered sequence of elements from that array.  A slice
 type denotes the set of all slices of arrays of its element type.
 A slice value may be <code>nil</code>.
+</p>
+
+<p>
+切片是指向数组相邻片断的引用，包含数组的已编号元素序列。切片类型代表所有数组的所有切片的集合的元素类型。<!-- ??? -->切片的值可以为 <code>nil</code>。
 </p>
 
 <pre class="ebnf">
@@ -1110,12 +1166,20 @@ through <code>len(s)-1</code> (§<a href="#Indexes">Indexes</a>).  The slice ind
 given element may be less than the index of the same element in the
 underlying array.
 </p>
+
+<p>
+像数组一样，切片也有长度并且可索引。 切片 <code>s</code> 的长度可以通过内建函数 <code>len(s)</code>得到；与数组不同的是它可以在运行时改变。元素可以使用0到 <code>len(s)-1</code> 的整数来索引(§<a href="#Indexes">索引</a>)。元素在切片中索引可能会小于它在数组中的索引。
+</p>
+
 <p>
 A slice, once initialized, is always associated with an underlying
 array that holds its elements.  A slice therefore shares storage
 with its array and with other slices of the same array; by contrast,
 distinct arrays always represent distinct storage.
 </p>
+
+<p>切片一旦初始化，就会与存储它的元素的后方数组关联。因此切片与数组共享存储空间，也和与该数组关联的其它切片共享存储空间；相反，不同的数组通常代表不同的存储空间。</p>
+
 <p>
 The array underlying a slice may extend past the end of the slice.
 The <i>capacity</i> is a measure of that extent: it is the sum of
@@ -1125,6 +1189,9 @@ one from the original slice (§<a href="#Slices">Slices</a>).
 The capacity of a slice <code>a</code> can be discovered using the
 built-in function <code>cap(a)</code> and the relationship between
 <code>len()</code> and <code>cap()</code> is:
+</p>
+
+<p>与切片关联的数组可能会超过切片的尾端。<i>容量</i> 就是用来度量这个长度的：它是切片的长度与数组组超出切片的部分的长度之和；可以从原来的切片(§<a href="file:///home/sai/workspace/go/golang-china/doc/go_spec_zh.html#Slices">Slices</a>)切一个新的切片，新切片的长度最长就是容量。 切片的容量可以用内建函数 <span class="Apple-style-span" style="font-family: monospace;">cap(a) 得到，函数 </span><code>len()</code> 和 <code>cap() 有以下关系：</code>
 </p>
 
 <pre>
@@ -1139,6 +1206,10 @@ made using the built-in function <code>make</code>, which takes a slice type
 and parameters specifying the length and optionally the capacity:
 </p>
 
+<p>
+没有初始化的切片的值为 <code>nil</code>。<code>nil</code> 切片的长度和容量都为0。使用内建函数 <code>make</code> 来初始化类型为 T 的切片值，它的参数是切片类型和切片长度及可选的切片容量。
+</p>
+
 <pre>
 make([]T, length)
 make([]T, length, capacity)
@@ -1149,6 +1220,10 @@ The <code>make()</code> call allocates a new, hidden array to which the returned
 slice value refers. That is, executing
 </p>
 
+<p>
+<code>make()</code>会为返回的切片值分配一个隐匿的数组。执行以下代码：
+</p>
+
 <pre>
 make([]T, length, capacity)
 </pre>
@@ -1156,6 +1231,10 @@ make([]T, length, capacity)
 <p>
 produces the same slice as allocating an array and slicing it, so these two examples
 result in the same slice:
+</p>
+
+<p>
+通过分配数组并切割数组来产生相同的切片，因此以下两个例子返回相同的切片：
 </p>
 
 <pre>
@@ -1171,7 +1250,11 @@ however with slices of slices (or arrays of slices), the lengths may vary dynami
 Moreover, the inner slices must be allocated individually (with <code>make</code>).
 </p>
 
-<h3 id="Struct_types">Struct types</h3>
+<p>
+和数组一样，切片也只能是一维的，但是也可以用多维对象来构成。在数组的数组中，内部数组的长度总是相同的；而在切片的切片（或切片的数组）中，内部切片的长度是可以动态改变的。此外，内部切掉必须被独立的分配（用<code>make</code>）。
+</p>
+
+<h3 id="Struct_types">Struct types 结构体类型</h3>
 
 <p>
 A struct is a sequence of named elements, called fields, each of which has a
@@ -1179,6 +1262,10 @@ name and a type. Field names may be specified explicitly (IdentifierList) or
 implicitly (AnonymousField).
 Within a struct, non-<a href="#Blank_identifier">blank</a> field names must
 be unique.
+</p>
+
+<p>
+结构体就是一个叫做成员的命名元素序列，每个成员有都名字和类型。成员名字可能被显示（标识符列表）或隐式（匿名成员）的指定。在结构体中，非<a href="#Blank_identifier">空白</a>的成员名必须是唯一的。
 </p>
 
 <pre class="ebnf">
@@ -1210,6 +1297,10 @@ and <code>T</code> itself may not be
 a pointer type. The unqualified type name acts as the field name.
 </p>
 
+<p>
+在声明时只指定了类型而没有指定名字的成员叫作 <i>匿名成员</i>，这样的成员类型必须用类型名 T 或是作为指针类型的 *T，并且 T 本身不能是指针类型。合法的类型名将作为成员名。
+</p>
+
 <pre>
 // A struct with four anonymous fields of type T1, *T2, P.T3 and *P.T4
 struct {
@@ -1224,6 +1315,10 @@ struct {
 <p>
 The following declaration is illegal because field names must be unique
 in a struct type:
+</p>
+
+<p>
+以下的声明是错误的，因为结构本中成员名必须是唯一的：
 </p>
 
 <pre>
@@ -1256,12 +1351,26 @@ a type named <code>T</code>:
 	    set of <code>T</code>).
 	</li>
 </ul>
+
+<p>匿名成员和方法 (§<a href="file:///home/sai/workspace/go/golang-china/doc/go_spec_zh.html#Method_declarations">方法声明</a>) 会被提升为结构体的成员和方法 (§<a href="file:///home/sai/workspace/go/golang-china/doc/go_spec_zh.html#Selectors">选择器</a>)。对于结构体 <code>S</code> 和类型 <code>T</code>，有以下规则：
+</p>
+
+<ul>
+  <li>如果 <code>S</code> 包含 <code>T</code> 类型匿名成员变量，<code>S</code> 的方法集将包括 <code>T</code> 的方法集。 </li>
+  <li>如果 <code>S</code> 包含 <code>*T</code> 类型匿名成员变量，<code>S</code> 的方法集将包括 <code>*T</code> 的方法集（该方法集又包含了 <code>T</code> 的方法集）。 </li>
+  <li>如果 <code>S</code> 包含 <code>*T</code> 或 <code>*T</code> 类型匿名成员变量，<code>*S</code> 的方法集将包括 <code>*T</code> 的方法集（该方法集又包含了 <code>T</code> 的方法集）。 </li>
+</ul>
+
 <p>
 A field declaration may be followed by an optional string literal <i>tag</i>,
 which becomes an attribute for all the fields in the corresponding
 field declaration. The tags are made
 visible through a <a href="#Package_unsafe">reflection interface</a>
 but are otherwise ignored.
+</p>
+
+<p>
+成员声明的最后可以添加一个 <i>标签</i>，它将变成所有对应的成员变量的属性。标签在可以通过 <a href="#Package_unsafe">反射接口</a> 访问，但其它地方它将被忽略。
 </p>
 
 <pre>
@@ -1274,12 +1383,16 @@ struct {
 }
 </pre>
 
-<h3 id="Pointer_types">Pointer types</h3>
+<h3 id="Pointer_types">Pointer types 指针类型</h3>
 
 <p>
 A pointer type denotes the set of all pointers to variables of a given
 type, called the <i>base type</i> of the pointer.
 A pointer value may be <code>nil</code>.
+</p>
+
+<p>
+指针类型就是指定类型的所有变量的指针的集合。指定类型的叫做指针的 <i>基础类型</i>。指针的值可以是 <code>nil</code>.
 </p>
 
 <pre class="ebnf">
@@ -1292,12 +1405,16 @@ BaseType = Type .
 *map[string] *chan int
 </pre>
 
-<h3 id="Function_types">Function types</h3>
+<h3 id="Function_types">Function types 函数类型</h3>
 
 <p>
 A function type denotes the set of all functions with the same parameter
 and result types.
 A function value may be <code>nil</code>.
+</p>
+
+<p>
+函数类型表示所有具有相同参数和返回类型的函数。函数类型的值可以是 <code>nil</code>.
 </p>
 
 <pre class="ebnf">
@@ -1317,6 +1434,11 @@ type stands for one item of that type.  Parameter and result
 lists are always parenthesized except that if there is exactly
 one unnamed result it may written as an unparenthesized type.
 </p>
+
+<p>
+在参数列表或返回值列表中，变量名（标识符列表）要么全部写要么全部省略。如果要写，那么一个名字只能代表一个指定类型的元素（参数或返回值）。如果省略，那么每个类型就代表相应类型的一个元素。参数和返回值需要用括号包围起来，只有一个返回值的未命名参数可以不用括号包围。
+</p>
+
 <p>
 For the last parameter only, instead of a type one may write
 <code>...</code> or <code>...  T</code> to indicate that the function
@@ -1325,6 +1447,10 @@ may be invoked with zero or more additional arguments.  If the type
 arguments must all be
 <a href="#Assignment_compatibility">assignment compatible</a>
 with type <code>T</code>; otherwise they may be of any type.
+</p>
+
+<p>
+可以把最后一个参数写成 <code>...</code> or <code>...  T</code>，表示该函数可以有一个或多个额外的参数。如果类型 <code>T</code> 出现在参数声明中，那么所有传入的参数都必须与 <code>T</code> <a href="#Assignment_compatibility">赋值兼容</a>；如果写成 <code>...</code> 的形式，那么可以传入任何类型的参数。
 </p>
 
 <pre>
@@ -1340,14 +1466,19 @@ func(int, int, float) (float, *[]int)
 func(n int) func(p *T)
 </pre>
 
-
-<h3 id="Interface_types">Interface types</h3>
+<h3 id="Interface_types">Interface types 接口类型</h3>
 
 <p>
 An interface type specifies a <a href="#Types">method set</a> called its <i>interface</i>.
 A variable of interface type can store a value of any type with a method set
 that is any superset of the interface. Such a type is said to
 <i>implement the interface</i>. An interface value may be <code>nil</code>.
+</p>
+
+<p>
+接口类型定义了一个 <a href="#Types">方法集</a> 叫做 <i>接口</i>。
+接口类型的变量可以存储任何类型的值，只要那个类型的方法集是接口的超集即可。这样的类型叫做 <i>接口的实现</i>. 
+接口的值可以是 <code>nil</code>.
 </p>
 
 <pre class="ebnf">
@@ -1359,6 +1490,10 @@ InterfaceTypeName  = TypeName .
 
 <p>
 As with all method sets, in an interface type, each method must have a unique name.
+</p>
+
+<p>
+与其它方法集一样，在接口类型中，每个方法名也都必须是唯一的。
 </p>
 
 <pre>
@@ -1376,6 +1511,11 @@ For instance, if two types <code>S1</code> and <code>S2</code>
 have the method set
 </p>
 
+<p>
+多个类型可以实现同一个接口。
+例如，如果两个类型 <code>S1</code> 和 <code>S2</code> 有以下方法集
+</p>
+
 <pre>
 func (p T) Read(b Buffer) bool { return ... }
 func (p T) Write(b Buffer) bool { return ... }
@@ -1390,9 +1530,18 @@ then the <code>File</code> interface is implemented by both <code>S1</code> and
 </p>
 
 <p>
+(<code>T</code> 代表 <code>S1</code> 和 <code>S2</code>)
+那么类型 <code>S1</code> 和 <code>S2</code> 都实现了 <code>File</code> 接口，不管 <code>S1</code> 和 <code>S2</code> 的其它方法是什么样的。
+</p>
+
+<p>
 A type implements any interface comprising any subset of its methods
 and may therefore implement several distinct interfaces. For
 instance, all types implement the <i>empty interface</i>:
+</p>
+
+<p>
+一个类型实现了由它的方法子集组成的接口，因此也可以实现多个不同的接口。如，所有类型都实现了 <i>空接口</i>：
 </p>
 
 <pre>
@@ -1403,6 +1552,10 @@ interface{}
 Similarly, consider this interface specification,
 which appears within a <a href="#Type_declarations">type declaration</a>
 to define an interface called <code>Lock</code>:
+</p>
+
+<p>
+类似的，请看下面的接口定义，在 <a href="#Type_declarations">类型声明</a> 中定义了一个叫做 <code>Lock</code> 的接口：
 </p>
 
 <pre>
@@ -1416,6 +1569,10 @@ type Lock interface {
 If <code>S1</code> and <code>S2</code> also implement
 </p>
 
+<p>
+如果 <code>S1</code> 和 <code>S2</code> 也实现了
+</p>
+
 <pre>
 func (p T) Lock() { ... }
 func (p T) Unlock() { ... }
@@ -1425,11 +1582,21 @@ func (p T) Unlock() { ... }
 they implement the <code>Lock</code> interface as well
 as the <code>File</code> interface.
 </p>
+
+<p>
+那么它们即实现了 <code>Lock</code> 接口也实现了 <code>File</code> 接口。
+</p>
+
 <p>
 An interface may contain an interface type name <code>T</code>
 in place of a method specification.
 The effect is equivalent to enumerating the methods of <code>T</code> explicitly
 in the interface.
+</p>
+
+<p>
+接口中可以包含另一接口 <code>T</code> 来代替方法定义。
+效果跟直接把方法定义在接口中一样。
 </p>
 
 <pre>
@@ -1445,14 +1612,21 @@ type File interface {
 }
 </pre>
 
-<h3 id="Map_types">Map types</h3>
+<h3 id="Map_types">Map types 映射类型</h3>
 
 <p>
 A map is an unordered group of elements of one type, called the
 element type, indexed by a set of unique <i>keys</i> of another type,
 called the key type.
 A map value may be <code>nil</code>.
+</p>
 
+<p>
+A map is an unordered group of elements of one type, called the
+element type, indexed by a set of unique <i>keys</i> of another type,
+called the key type.
+映射是一组无序的某种类型的元素，元素的类型叫元素类型，元素被另一组另一类型的唯一的键索引，键的类型叫键类型。
+映射类型的值可以是 <code>nil</code>.
 </p>
 
 <pre class="ebnf">
@@ -1467,7 +1641,10 @@ key type; thus the key type must be a boolean, numeric, string, pointer, functio
 map, or channel type. If the key type is an interface type, these
 comparison operators must be defined for the dynamic key values;
 failure will cause a <a href="#Run_time_panics">run-time panic</a>.
+</p>
 
+<p>
+键类型的 <code>==</code> and <code>!=</code> 比较运算符(§<a href="#Comparison_operators">比较运算符</a>)必须被定义；因此键必须是布尔、数字、字符串、指针、函数、接口、映射或管道类型。如果键是接口类型的，那么它的比较运算符必须被动态的键值定义；否则会导致 <a href="#Run_time_panics">运行时错误</a>。
 </p>
 
 <pre>
@@ -1483,11 +1660,23 @@ built-in function <code>len(m)</code> and may change during execution.
 Values may be added and removed
 during execution using special forms of <a href="#Assignments">assignment</a>.
 </p>
+
+<p>
+元素的个数叫做长度，不能为负。
+映射 <code>m</code> 的长度可以使用内建函数 <code>len(m)</code> 来得到，长度有可能在运行时改变。
+可以在运行时用特殊的 <a href="#Assignments">赋值</a> 方式添加和删除值。 
+</p>
+
 <p>
 The value of an uninitialized map is <code>nil</code>.
 A new, empty map value is made using the built-in
 function <code>make</code>, which takes the map type and an optional
 capacity hint as arguments:
+</p>
+
+<p>
+未初始化的映射的值为 <code>nil</code>.
+新的空的映射值可以用内建的 <code>make</code> 函数创建，需要映射的类型和一个可选的容量作为参数：
 </p>
 
 <pre>
@@ -1501,13 +1690,22 @@ maps grow to accommodate the number of items
 stored in them.
 </p>
 
-<h3 id="Channel_types">Channel types</h3>
+<p>
+初始化的容量不会限定它的大小：映射会随着元素个数自动增长。
+</p>
+
+<h3 id="Channel_types">Channel types 管道类型</h3>
 
 <p>
 A channel provides a mechanism for two concurrently executing functions
 to synchronize execution and communicate by passing a value of a
 specified element type.
 A value of channel type may be <code>nil</code>.
+</p>
+
+<p>
+管道提供了一种供两个正在执行的函数实施同步执行和通过传送特殊元素类型来通信的机制。
+其值可以为 <code>nil</code>。
 </p>
 
 <pre class="ebnf">
@@ -1521,6 +1719,10 @@ RecvChannel   = "&lt;-" "chan" ElementType .
 To avoid a parsing ambiguity in cases such as <code>chan&lt;- chan int</code>,
 the Channel production's ElementType cannot be a RecvChannel.
 To construct such a type, parenthesize the RecvChannel first.
+</p>
+
+<p>
+为了避免出现像 <code>chan&lt;- chan int</code> 这样的不明确的声明，管道生产式的 ElementType 不能是 RecvChannel。如果一定要这样的管理，请用括号把 RecvChannel 包围起来。
 </p>
 
 <pre>
@@ -1537,6 +1739,12 @@ to receive. This constraint is called a channel's <i>direction</i>; either
 <i>send</i>, <i>receive</i>, or <i>bi-directional</i> (unconstrained).
 </p>
 
+<p>
+为了方便创建，管道即可以接收也可以发送值。
+为了方便和赋值，管道可以被限制为只可接收或只可发送。
+为个限制就叫做管道的 <i>方向</i>； 有 <i>发送</i>、<i>接收</i> 或 <i>双向</i> (无限制) 三种。
+</p>
+
 <pre>
 chan T         // can be used to send and receive values of type T
 chan&lt;- float   // can only be used to send floats
@@ -1547,6 +1755,11 @@ chan&lt;- float   // can only be used to send floats
 The value of an uninitialized channel is <code>nil</code>. A new, initialized channel
 value can be made using the built-in function <code>make</code>,
 which takes the channel type and an optional capacity as arguments:
+</p>
+
+<p>
+未初始化的管道的值是 <code>nil</code>。可以用内建函数 <code>make</code> 来创建新和初始化,
+需要管道的类型和一个可选的容量作为参数：
 </p>
 
 <pre>
@@ -1561,8 +1774,16 @@ or absent, the communication succeeds only when both a sender and receiver are r
 </p>
 
 <p>
+容量，表示元素个数，设置管道的缓冲区大小。如果容量大于0，那么该管道是异步的：即如果缓冲区未满，那么发送操作就会成功而且不阻塞。如果容量为0或使用缺省值，那么只有在发送者和接收者都准备好的时候通信都会成功。
+</p>
+
+<p>
 A channel may be closed and tested for closure with the built-in functions
 <a href="#Close_and_closed"><code>close</code> and <code>closed</code></a>.
+</p>
+
+<p>
+管道可以使用内建函数 <a href="#Close_and_closed"><code>close</code> 和 <code>closed</code></a>来关闭和检测是否关闭。
 </p>
 
 <h2 id="Properties_of_types_and_values">Properties of types and values</h2>
