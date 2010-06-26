@@ -304,10 +304,10 @@ distinct types; even if "int" and "int32" are both 32 bits in size,
 they are not the same type.  There is also a "byte" synonym for
 "uint8", which is the element type for strings.
 
-Go语言中有一些通用的类型，例如"int"和"float"，它们不同机器上占用适当空间大小。同时，
-也包含了许多大小固定的类型，例如"int8"和"float64"，还有无符号类型"uint"和"uint32"。
-需要注意的是，"int"和"int32"虽然占有同样的内存大小，但是却不是同一种数据类型。不过
-"byte"和"uint8"却是相同的类型，它们是字符串中字符类型。
+Go语言中有一些通用的类型，例如"int"和"float"，它们对应的内存大小和处理器类型相关。同时，
+也包含了许多固定大小的类型，例如"int8"和"float64"，还有无符号类型"uint"和"uint32"等。
+需要注意的是，即使"int"和"int32"占有同样的内存大小，但并不是同一种数据类型。不过
+"byte"和"uint8"对应是相同的数据类型，它们是字符串中字符类型。
 
 Speaking of "string", that's a built-in type as well.  Strings are
 <i>immutable values</i>&mdash;they are not just arrays of "byte" values.
@@ -315,16 +315,16 @@ Once you've built a string <i>value</i>, you can't change it, although
 of course you can change a string <i>variable</i> simply by
 reassigning it.  This snippet from "strings.go" is legal code:
 
-说道字符串"string"，它是一个内建类型。字符串虽然是字符序列，但并不是一个字符数组。
-当你建立字符串之后，你就不能改变字符串中的元素。不过可以通过指定新字符串来改变它。
-下面列举"strings.go"例子说明字符串的用法：
+go中的字符串是一个内建数据类型。字符串虽然是字符序列，但并不是一个字符数组。可以创建新的
+字符串，但是不能改变字符串。不过我们可以通过新的字符串来达到想改变字符串的目的。
+下面列举"strings.go"例子说明字符串的常见用法：
 
 --PROG progs/strings.go /hello/ /ciao/
 
 However the following statements are illegal because they would modify
 a "string" value:
 
-不管如何，下面的用法是禁止的，因为它们试图修改字符串的字符元素的值：
+不管如何，试图修改字符串的做法都是被禁止的：
 
 	s[0] = 'x';
 	(*p)[1] = 'y';
@@ -332,13 +332,13 @@ a "string" value:
 In C++ terms, Go strings are a bit like "const strings", while pointers
 to strings are analogous to "const string" references.
 
-Go中的字符串和C++中的"const strings"概念类似，字符串指针和C++中的"const strings"
-引用类似。
+Go中的字符串和C++中的"const strings"概念类似，字符串指针则相当于C++中的"const strings"
+引用。
 
 Yes, there are pointers.  However, Go simplifies their use a little;
 read on.
 
-是的，它们都是是指针，虽然Go中更简化一些。
+是的，它们都是指针，但是Go中用法更简单一些。
 
 Arrays are declared like this:
 
@@ -351,9 +351,8 @@ from C, in which "arrayOfInt" would be usable as a pointer to "int".
 In Go, since arrays are values, it's meaningful (and useful) to talk
 about pointers to arrays.
 
-数组和字符串一样是一个值对象，但是数组是可以修改的。但是不同于C语言，"int"类型数组
-"arrayOfInt"并不能转化为"int"指针。因为，在Go语言中数组是一个值对象，它在内部保存
-"int"指针。
+数组和字符串一样也是一个值对象，不过数组的元素是可以修改的。不同于C语言的是："int"类型数组
+"arrayOfInt"并不能转化为"int"指针。因为，在Go语言中数组是一个值对象，它在内部保存"int"指针。
 
 The size of the array is part of its type; however, one can declare
 a <i>slice</i> variable, to which one can assign a pointer to
@@ -367,10 +366,11 @@ an underlying, often anonymous, regular array.  Multiple slices
 can share data if they represent pieces of the same array;
 multiple arrays can never share data.
 
-数组的大小是数组变量的一部分。但是我们可以通过定义一个<i>slice</i>变量，来对数据进行
-操作。一个<i>slice</i>表示"a[low : high]"，它是对数组一部分的引用。Slices虽然看起来
-和数组类似，但是它并没有自己的内存空间，相反它在底层关引用一段内存。多个Slices如果引用同
-一个数组可以共享数组，但是多个数组则不可能共享数据。
+数组的大小是数组类型的一部分。我们还可以通过<i>slice（切片）</i>类型的变量来访问数组。
+首先，数据元素的类型要和<i>slice（切片）</i>类型相同，然后通过"a[low : high]"类似的
+语法来关联数组的low到heigh-1的子区间元素。Slices和数组的声明语法类似，但是不像数组那样
+要指定元素的个数（"[]"和"[10]"的区别）；它在内部引用特定的空间，或者其它数组的空间。
+如果多个Slices引用同一个数组，则可以共享数组的空间。但是不同数组之间是无法共享内存空间的。
 
 Slices are much more common in Go programs than
 regular arrays; they're more flexible, have reference semantics,
@@ -379,8 +379,9 @@ layout of a regular array; if you want to have a hundred elements
 of an array stored within your structure, you should use a regular
 array.
 
-在Go中Slices使用的更为普遍，因为它更有弹性，同时也具有效率。但是，Slices缺少对内存的绝对
-控制。如果你只是想要一个可以存放100个元素，那么你就应该选择数组了。
+在Go语言中Slices比数组使用的更为普遍，因为它更有弹性，引用的语法也使得它效率很高。
+但是，Slices缺少对内存的绝对控制比数组要差一些。例如你只是想要一个可以存放100个元素
+的空间，那么你就可以选择数组了。
 
 When passing an array to a function, you almost always want
 to declare the formal parameter to be a slice.  When you call
@@ -392,13 +393,13 @@ create (efficiently) a slice reference and pass that.
 
 Using slices one can write this function (from "sum.go"):
 
-使用slices可以写出以下函数（来自"sum.go"）：
+比如以下函数以slices类型为参数（来自"sum.go"）：
 
 --PROG progs/sum.go /sum/ /^}/
 
 and invoke it like this:
 
-可以这样调用：
+可以用数组的地址为参数调用：
 
 --PROG progs/sum.go /1,2,3/
 
@@ -412,14 +413,14 @@ Putting an "&amp;"
 in front gives us the address of a unique instance of the value.  We pass the
 pointer to "sum()" by (implicitly) promoting it to a slice.
 
-函数的返回值类型在参数列表后定义。表达式"[3]int{1,2,3}"定义一个含有3个"int"类型元素的数组
+函数的返回值类型在参数列表之后定义。表达式"[3]int{1,2,3}"定义一个含有3个"int"类型元素的数组
 （并且已经初始化），然后用"&amp;"来获取数组的地址。我们用数组指针作为参数调用"sum()"，数组
 指针被自动转换为slice类型。
 
 If you are creating a regular array but want the compiler to count the
 elements for you, use "..." as the array size:
 
-如果你创建一个初始化的数组，你可以倚赖编译起计算数组的元素数目，只要在数组大小中填写"..."就
+如果你创建一个初始化的数组，你可以让编译器自动计算数组的元素数目，只要在数组大小中填写"..."就
 可以了：
 
 	s := sum(&amp;[...]int{1,2,3});
@@ -428,8 +429,7 @@ In practice, though, unless you're meticulous about storage layout within a
 data structure, a slice itself&mdash;using empty brackets and no
 "&amp;"&mdash;is all you need:
 
-在编码时，除非需要精确控制内存布局；简单的方式是用slice（数组大小为空）作为参数，并且不需要
-取数组的地址。
+是实际编码中，如果不关心内存的具体细节，可以用slice类型（省略数组的大小）来代替数组地址为函数参数：
 
 	s := sum([]int{1,2,3});
 
@@ -443,20 +443,20 @@ The built-in function "len()", which returns number of elements,
 makes its first appearance in "sum".  It works on strings, arrays,
 slices, maps, and channels.
 
-用内建的"len()"函数，可以获取元素的数目，该函数在前面的"sum"中用到过。"len()"函数
+用内建的"len()"函数，可以获取map中元素的数目，该函数在前面的"sum"中用到过。"len()"函数
 还可以用在strings, arrays, slices, maps, 和 channels 中。
 
 By the way, another thing that works on strings, arrays, slices, maps
 and channels is the "range" clause on "for" loops.  Instead of writing
 
-还有另外"range"方法可以用到strings, arrays, slices, maps, 和 channels 中，
-它可以用于"for"循环的迭代。以下代码
+还有另外的"range"语法可以用到strings, arrays, slices, maps, 和 channels 中，
+它可以用于"for"循环的迭代。例如以下代码
 
 	for i := 0; i &lt; len(a); i++ { ... }
 
 to loop over the elements of a slice (or map or ...) , we could write
 
-也可以写成：
+用"range"语法可以写成：
 
 	for i, v := range a { ... }
 
@@ -468,7 +468,7 @@ for more examples of its use.
 这里的"i"对应元素的索引，"v"对应元素的值。关于更多的细节可以参考
 <a href='/doc/effective_go.html'>Effective Go</a>。
 
-An Interlude about Allocation
+An Interlude about Allocation 申请内存
 ----
 
 Most types in Go are values. If you have an "int" or a "struct"
@@ -476,15 +476,16 @@ or an array, assignment
 copies the contents of the object.
 To allocate a new variable, use "new()", which
 returns a pointer to the allocated storage.
-在Go语言中，大部分的类型都是变量。如果你有个int或struct(结构体)或
-array(数组)的变量，你需要拷贝他们的内容到一个新对象中，并重新分配一个
-新的变量，就用new(), 它的返回值是一个指向被分配地址空间的指针。
+
+在Go语言中，大部分的类型都是值变量。例如int或struct(结构体)或array(数组)类型变量，
+赋值的时候都是复制整个元素。如果需要为一个值类型的变量分配空间，可以用new()：
 
 	type T struct { a, b int }
 	var t *T = new(T);
 
 or the more idiomatic
-或者用别的方法
+
+或者更简洁的写法：
 
 	t := new(T);
 
@@ -492,34 +493,37 @@ Some types&mdash;maps, slices, and channels (see below)&mdash;have reference sem
 If you're holding a slice or a map and you modify its contents, other variables
 referencing the same underlying data will see the modification.  For these three
 types you want to use the built-in function "make()":
-有一些类型，如: maps, slices 和 channels(见下面)有reference semantics(引用语意).
-如果你修改了slice 或 map相关的内容，其他引用了这些数据的变量也能看到这个改变。对于
-这三个类型你得使用另一个内建的函数make()
+
+还有另外一些类型，如：maps, slices 和 channels(见下面)是引用语意（reference semantics）。
+如果你一个slice 或 map内的元素，那么其他引用了相同slice 或 map的变量也能看到这个改变。
+对于这三类引用类型的变量，需要用另一个内建的make()分配并初始化空间：
 
 	m := make(map[string]int);
 
 This statement initializes a new map ready to store entries.
 If you just declare the map, as in
-上面的语句初始化一个新的map并分配了存储空间
-如果你只想声明一个map，代码如下:
+
+上目的代码定义一个新的map并分配了存储空间。如果只是定一个map而不想分配空间的话，可以这样：
 
 	var m map[string]int;
 
 it creates a "nil" reference that cannot hold anything. To use the map,
 you must first initialize the reference using "make()" or by assignment from an
 existing map.
+
 它创建了一个nil(空的)引用并且没有分配存储空间。如果你想用这个map, 你必须使用make来
-初始化引用或者指向一个已经存在的map。
+分配并初始化内存空间或者指向一个已经有存储空间的map。
 
 Note that "new(T)" returns type "*T" while "make(T)" returns type
 "T".  If you (mistakenly) allocate a reference object with "new()",
 you receive a pointer to a nil reference, equivalent to
 declaring an uninitialized variable and taking its address.
-注意: new(T)返回的类型是*T, 而make(T)返回的是T. 如果你(错误的)使用new()分配
-了一个引用对象，你将会得到一个指向nil引用的指针。这个相当于声明了一个未初始化
-的变量并取得它的地址.
 
-An Interlude about Constants
+注意: new(T)返回的类型是*T, 而make(T)返回的是引用语意的T。如果你(错误的)使用new()分配
+了一个引用对象，你将会得到一个指向nil引用的指针。这个相当于声明了一个未初始化引用变量并取得
+它的地址。
+
+An Interlude about Constants 常量
 ----
 
 Although integers come in lots of sizes in Go, integer constants do not.
@@ -527,15 +531,17 @@ There are no constants like "0LL" or "0x0UL".   Instead, integer
 constants are evaluated as large-precision values that
 can overflow only when they are assigned to an integer variable with
 too little precision to represent the value.
-虽然在Go中整数(integer)占用了大量的空间，但是常量类型的整数并没有占用很多空间。
-这里没有像0LL 或 0x0UL的常量，取而代之的是，使用整数常量作为大型高精度的值，只有当
-他们被重新定义给另一个变量的时候才能超载.
 
-	const hardEight = (1 &lt;&lt; 100) &gt;&gt; 97  // legal
+虽然在Go中整数(integer)占用了大量的空间，但是常量类型的整数并没有占用很多空间。
+这里没有像0LL 或 0x0UL的常量，取而代之的是使用整数常量作为大型高精度的值。常量只有
+在最终被赋值给一个变量的时候才可以会出现溢出的情况：
+
+	const hardEight = (1 &lt;&lt; 100) &gt;&gt; 97  // legal，合法
 
 There are nuances that deserve redirection to the legalese of the
 language specification but here are some illustrative examples:
-这里重新定义和语言规范还是有些差别，下面是说明和规则:
+
+具体的语法细节比较琐屑，下面是一些简单的例子：
 
 	var a uint64 = 0  // a has type uint64, value 0
 	a := uint64(0)    // equivalent; uses a "conversion"
@@ -550,17 +556,19 @@ sign or size to another, and between "ints" and "floats", plus a few other
 simple cases.  There are no automatic numeric conversions of any kind in Go,
 other than that of making constants have concrete size and type when
 assigned to a variable.
-转换只能简单的使用，比如: 转换整数(int)到去其他的精度和大小，整数(int)与
-浮点数(float), 还有其他一些简单类型。Go 里面没有任何自动数值转换，除了此处以为
-由常数建立的变量是需要确定大小和类型.
 
-An I/O Package
+（强制？）转换只适用于几种简单的情况：转换整数(int)到去其他的精度和大小，整数(int)与
+浮点数(float)的转换, 还有其他一些简单情形。在Go语言中，系统不会对两种不同类型变量作
+任何隐式的类型转换。此外，由常数初始化的变量需要指定确定的类型和大小。
+
+An I/O Package I/O包
 ----
 
 Next we'll look at a simple package for doing file I/O with the usual
 sort of open/close/read/write interface.  Here's the start of "file.go":
-接下来我们使用一个简单的包(package)来对文件(file)输入输出接口来操作: open/
-close/read/write. 让我们从file.go开始:
+
+接下来我们使用open/close/read/write等基本的系统调用实现一个用于文件IO的包。
+让我们从文件file.go开始：
 
 --PROG progs/file.go /package/ /^}/
 
@@ -570,20 +578,23 @@ package hides the differences
 between various operating systems to give a consistent view of files and
 so on; here we're going to use its error handling utilities
 and reproduce the rudiments of its file I/O.
-在开始的己行里声明了一个&mdash;"file"&mdash;包, 还导入(import)了其他两个包os和syscall.
-os这个包封装了不同操作系统底层的实现，保留了统一的file(文件)和其他一些接口。在这里我们将
-会用error handling utilities(错误管理)和从新实现基本的file I/O(文件输入输出)
+
+文件的第一行声明当前代码对应&mdash;"file"&mdash;包，然后导入os和syscall两个包。
+包os封装了不同操作系统底层的实现，例如将文件抽象成相同的类型。我们将在系统接口基础
+上封装一个基本的文件IO接口。
 
 The other item is the low-level, external "syscall" package, which provides
 a primitive interface to the underlying operating system's calls.
-还有其他一些比较底层的包(package), 如: syscall 包，它提供一些底层的系统调用(system's calls).
+
+另外还有其他一些比较底层的syscall包，它提供一些底层的系统调用(system's calls)。
 
 Next is a type definition: the "type" keyword introduces a type declaration,
 in this case a data structure called "File".
 To make things a little more interesting, our "File" includes the name of the file
 that the file descriptor refers to.
-接下来是一个类型(type)定义: 用"type"这个关键字来声明一个类型. 在这个例子里数据结构(data structure)
-叫"File". 为了让这事变的有趣些，我们的File包含了一个这个文件的名字(name)用来描述这个文件。
+
+接下来是一个类型(type)定义：用"type"这个关键字来声明一个类。在这个例子里数据结构(data structure)
+名为"File"。为了让这事变的有趣些，我们的File包含了一个这个文件的名字(name)用来描述这个文件。
 
 Because "File" starts with a capital letter, the type is available outside the package,
 that is, by users of the package.   In Go the rule about visibility of information is
@@ -592,19 +603,22 @@ a structure field or method) is capitalized, users of the package may see it. Ot
 name and hence the thing being named is visible only inside the package in which
 it is declared.  This is more than a convention; the rule is enforced by the compiler.
 In Go, the term for publicly visible names is ''exported''.
-因为"File"结构体中的首字母是大写，所以这个类型包(package)外部访问. 在GO中访问规则的处理
-是非常简单的: 如果名字(of a top-level type, function, method, constant or variable, or of
+
+因为结构体名字"File"的首字母是大写，所以这个类型包(package)可以被外部访问。在GO中访问规则的处理
+是非常简单的：如果顶极类型名字首字母(包括：function, method, constant or variable, or of
 a structure field or method)是大写，那么引用了这个包(package)的使用者就可以访问到它。不然
-名称和被命名的东西将只能有package内部看到。Go的这个规则比语言的规则要强硬，因为这个规则是由
-编译器(compiler)强制规范的。在GO中，一组公开可见的名称是"exported".
+名称和被命名的东西将只能有package内部看到。这是一个要严格遵循的规则，因为这个访问规则是由
+编译器(compiler)强制规范的。在GO中，一组公开可见的名称是"exported"。
 
 In the case of "File", all its fields are lower case and so invisible to users, but we
 will soon give it some exported, upper-case methods.
-在这个File例子中, 所有的字段(fields)都是小写所以访问者看不到，但是我们将给它一个出口(exported),
-一个大写的methods.
+
+在这个File例子中，所有的字段(fields)都是小写所以从包外部是不能访问的，不过我们在下面将会一个
+一个对外访问的出口(exported) —— 一个以大写字母开头的方法。
 
 First, though, here is a factory to create a "File":
-开始先创建一个File.
+
+首先是一个创建File结构体的函数：
 
 --PROG progs/file.go /newFile/ /^}/
 
@@ -612,8 +626,10 @@ This returns a pointer to a new "File" structure with the file descriptor and na
 filled in.  This code uses Go's notion of a ''composite literal'', analogous to
 the ones used to build maps and arrays, to construct a new heap-allocated
 object.  We could write
-这将返回一个指向新File结构体的指针并有文件描述和文件名. 这段代码使用了GO的''复合变量''(composite 
-literal)的概念，就想创建一个maps 和arrays一样。要创建一个新的heap-allocated对象，我们将会写成
+
+这将返回一个指向新File结构体的指针，结构体存有文件描述符和文件名。这段代码使用了GO的''复合变量''(composite 
+literal)的概念，和创建内建的maps和arrays类型变量一样。要创建在堆（heap-allocated）中创建一个新的
+对象，我们可以这样写：
 
 	n := new(File);
 	n.fd = fd;
@@ -622,18 +638,20 @@ literal)的概念，就想创建一个maps 和arrays一样。要创建一个新�
 
 but for simple structures like "File" it's easier to return the address of a nonce
 composite literal, as is done here on line 21.
-但像File这样简单的结构体有更简单的方法让它返回一个复合变量(composite literal)的地址,
-就像上个例子里面的21行。
+
+如果结构比较简单的话，我们可以直接在返回结构体变量地址的时候初始化成员字段，如前面例子的
+21行代码所示。
 
 We can use the factory to construct some familiar, exported variables of type "*File":
-我们可以创建一个相似的结构，输出类型为*File的变量。
+
+我们可以用前面的函数（newFile）构造一些File类型的变量，返回*File：
 
 --PROG progs/file.go /var/ /^.$/
 
 The "newFile" function was not exported because it's internal. The proper,
 exported factory to use is "Open":
-newFile这个函数没有输出(exported)是因为它是内部(internal)的. 真正的输出(exported)是
-Open这个函数.
+
+这里的newFile是内部函数，真正包外部可以访问的函数是Open：
 
 --PROG progs/file.go /func.Open/ /^}/
 
@@ -649,30 +667,30 @@ both of type "int" (although you'd have to look at the "syscall" package
 to see that).  Finally, line 35 returns two values: a pointer to the new "File"
 and the error.  If "syscall.Open" fails, the file descriptor "r" will
 be negative and "newFile" will return "nil".
-在这几行里出现了一些新的东西。首先，Open 返回多个变量值(multi-value)，一个File指针和一个error(
-等一下会介绍errors). 我们用括号类表来声明返回多个变量值(multi-value). 语法上它看
-起来像第二个参数列表。syscall.Open 这个函数同样也是返回multi-value, 接着我们能在31行
-的声明取得这个multi-value的返回值。它创建了r和e两个变量，这两个都是int类型(你必须去syscall的package
-里面才能看出来是个int类型)。最后，35行返回两个变量，一个指向File指针和一个error.
-如果syscall.Open打开失败， 这个文件描述r将会是个负值，newFile将会返回nil.
+
+在这几行里出现了一些新的东西。首先，函数Open返回多个值(multi-value)：一个File指针和一个error(
+等一下会介绍errors)》我们用括号来表来声明返回多个变量值(multi-value)，语法上它看
+起来像第二个参数列表。syscall.Open系统调用同样也是返回多个值multi-value。接着我们能在31行
+创建了r和e两个变量用于保存syscall.Open的返回值。函数最终也是返回2个值，分别为File指针和一个error。
+如果syscall.Open打开失败，文件描述r将会是个负值，newFile将会返回nil。
 
 About those errors:  The "os" library includes a general notion of an error.
 It's a good idea to use its facility in your own interfaces, as we do here, for
 consistent error handling throughout Go code.   In "Open" we use a
 conversion to translate Unix's integer "errno" value into the integer type
 "os.Errno", which implements "os.Error".
-关于这个错误(errors): os这个函数包含了一些错误的感念. 在你的接口中使用它是个不错
-的主意。就像我们在这里做的一样, 在GO里面统一管理错误处理。在Open这个函数中，我们
-采用了Unix的整数错误代码os.Errno，并用它来实现os.Error.
+
+关于错误：os包包含了一些常见的错误类型。在用户自己的代码中也尽量使用这些通用的错误。
+在Open函数中，我们用os.Error函数将Unix的整数错误代码转换为go语言的错误类型。
 
 Now that we can build "Files", we can write methods for them. To declare
 a method of a type, we define a function to have an explicit receiver
 of that type, placed
 in parentheses before the function name. Here are some methods for "*File",
 each of which declares a receiver variable "file".
-现在我们可以创建Files, 我们为它写了些方法(methods). 要声明一个方法(method)类型,
-我们定义了一个函数去指定它的类型，把它方在函数名之前的括号里。这里为*File创建了
-一些方法(method), 每个都声明了可接受文件变量.
+
+现在我们可以创建Files,我们为它定义了一些常用的方法(methods)。要给一个类型定义一个方法(method)，
+需要在函数名前增加一个用于访问当前类型的变量。这些是为*File类型创建的一些方法：
 
 --PROG progs/file.go /Close/ END
 
@@ -681,34 +699,38 @@ members of the structure.  Methods are not declared within
 the "struct" declaration itself.  The "struct" declaration defines only data members.
 In fact, methods can be created for almost any type you name, such as an integer or
 array, not just for "structs".   We'll see an example with arrays later.
-这里没有使用this还有接受变量必须要访问结构体的成员。方法(methods)中并没有声明自己的结构体。
-struct结构只声明数据成员(data members). 事实上，这些方法(methods)能被创建在任何你能说出来
-的类型。如: 整数(integer), 数组(array), 并不仅仅只有结构体(structs). 我们待会就能看到数组
-(array)的例子。
 
+这些并没有隐含的this指针（参考C＋＋类），而且类型的方法(methods)也不是定义在struct内部——struct结构
+只声明数据成员(data members)。事实上，我们可以给任意数据类型定义方法，例如：整数(integer)，数组(array)
+等。后面我们会有一个给数组定义方法的例子。
 
 The "String" method is so called because of a printing convention we'll
 describe later.
-String这个方法之所以会被调用是为了更好的打印信息。我们待会才会说明。
+
+String这个方法之所以会被调用是为了更好的打印信息，我们稍后会详细说明。
 
 The methods use the public variable "os.EINVAL" to return the ("os.Error"
 version of the) Unix error code "EINVAL".  The "os" library defines a standard
 set of such error values.
-这个方法(methods)使用共有的变量os.EINVAL去返回(os.Error的版本)Unix错误代码EINVAL.
-os函数库中定义了标准的error变量。
+
+方法(methods)使用os.EINVAL来表示(os.Error的版本)Unix错误代码EINVAL。
+在os包中针对标准的error变量定义各种错误常量。
 
 We can now use our new package:
-现在我们可以使用我们自己创建的包(package)了.
+
+现在我们可以使用我们自己创建的包(package)了：
 
 --PROG progs/helloworld3.go /package/ END
 
 The ''"./"'' in the import of ''"./file"'' tells the compiler to use our own package rather than
 something from the directory of installed packages.
-这个''"./"''在导入(import)''"./file"''时告诉编译器(compiler)使用我们自己的package, 而不是在
-默认安装的package中找。
+
+这个''"./"''在导入(import)''"./file"''时告诉编译器(compiler)使用我们自己的package，而不是在
+默认的package路径中找。
 
 Finally we can run the program:
-最后，我们来执行这个程序:
+
+最后，我们来执行这个程序：
 
 	% helloworld3
 	hello, world

@@ -425,7 +425,13 @@ break        default      func         interface    select
 case         defer        go           map          struct
 chan         else         goto         package      switch
 const        fallthrough  if           range        type
-continue     for          import       return       var
+continue     for          import       <p>
+An integer literal is a sequence of digits representing an
+<a href="#Constants">integer constant</a>.
+An optional prefix sets a non-decimal base: <code>0</code> for octal, <code>0x</code> or
+<code>0X</code> for hexadecimal.  In hexadecimal literals, letters
+<code>a-f</code> and <code>A-F</code> represent values 10 through 15.
+</p>return       var
 </pre>
 
 <h3 id="Operators_and_Delimiters">Operators and Delimiters 运算符和分隔符</h3>
@@ -447,7 +453,11 @@ The following character sequences represent <a href="#Operators">operators</a>, 
      &amp;^          &amp;^=
 </pre>
 
+<<<<<<< HEAD
 <h3 id="Integer_literals">Integer literals 整型字面量</h3>
+=======
+<h3 id="Integer_literals">Integer literals 整型字面值</h3>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 
 <p>
 An integer literal is a sequence of digits representing an
@@ -458,9 +468,15 @@ An optional prefix sets a non-decimal base: <code>0</code> for octal, <code>0x</
 </p>
 
 <p>
+<<<<<<< HEAD
 整型字面量是一个代表 <a href="#Constants">整型常量</a> 的数字序列。
 可以添加一个前缀来表示非十进制基底的数： <code>0</code> 代表八进制， <code>0x</code> 或
 <code>0X</code> 代表十六进制。在十六进制的字面量中，字母
+=======
+整型字面值是一个代表 <a href="#Constants">整型常量</a> 的数字序列。
+可以添加一个前缀来表示非十进制基底的数： <code>0</code> 代表八进制， <code>0x</code> 或
+<code>0X</code> 代表十六进制。在十六进制的字面值中，字母
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 <code>a-f</code> 和 <code>A-F</code> 代表值 10 到 15。
 </p>
 
@@ -478,7 +494,11 @@ hex_lit     = "0" ( "x" | "X" ) hex_digit { hex_digit } .
 170141183460469231731687303715884105727
 </pre>
 
+<<<<<<< HEAD
 <h3 id="Floating-point_literals">Floating-point literals 浮点数字面量</h3>
+=======
+<h3 id="Floating-point_literals">Floating-point literals 浮点数字面值</h3>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 <p>
 A floating-point literal is a decimal representation of a
 <a href="#Constants">floating-point constant</a>.
@@ -491,7 +511,11 @@ point or the exponent may be elided.
 </p>
 
 <p>
+<<<<<<< HEAD
 浮点字面量是 <a href="#Constants">浮点数常量</a>
+=======
+浮点字面值是 <a href="#Constants">浮点数常量</a>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 的十进制表示。
 它有一个整数部分、一个分数部分、一个小数部分和一个指数部分。
 整数和分数部分包括十进制数；指数部分是一个 <code>e</code> or <code>E</code>
@@ -519,7 +543,11 @@ exponent  = ( "e" | "E" ) [ "+" | "-" ] decimals .
 .12345E+5
 </pre>
 
+<<<<<<< HEAD
 <h3 id="Imaginary_literals">Imaginary literals 虚数字面量</h3>
+=======
+<h3 id="Imaginary_literals">Imaginary literals 虚数字面值</h3>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 <p>
 An imaginary literal is a decimal representation of the imaginary part of a
 <a href="#Constants">complex constant</a>.
@@ -530,9 +558,15 @@ by the lower-case letter <code>i</code>.
 </p>
 
 <p>
+<<<<<<< HEAD
 虚数字面量是 <a href="#Constants">复数型常量</a> 的虚数部分的十进制表示。
 它由一个
 <a href="#Floating-point_literals">浮点数字面量</a>
+=======
+虚数字面值是 <a href="#Constants">复数型常量</a> 的虚数部分的十进制表示。
+它由一个
+<a href="#Floating-point_literals">浮点数字面值</a>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 或二进制整型后面跟一个小字字母 <code>i</code> 构成。
 </p>
 
@@ -553,7 +587,11 @@ imaginary_lit = (decimals | float_lit) "i" .
 </pre>
 
 
+<<<<<<< HEAD
 <h3 id="Character_literals">Character literals 字符字面量</h3>
+=======
+<h3 id="Character_literals">Character literals 字符字面值</h3>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 
 <p>
 A character literal represents an <a href="#Constants">integer constant</a>,
@@ -583,7 +621,11 @@ a literal <code>a</code>-dieresis, U+00E4, value <code>0xe4</code>.
 
 <p>
 最简单的形式就是表示单引号包围的单一字符；由于 Go 的源代码文本是用 UTF-8 编码的 Unicode 字符，
+<<<<<<< HEAD
 因此多个 UTF-8 编码的字节可以表示一个整型值。如，字面量 <code>'a'</code>
+=======
+因此多个 UTF-8 编码的字节可以表示一个整型值。如，字面值 <code>'a'</code>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 用一个字节表示一个文字 <code>a</code>，Unicode U+0061， 值 <code>0x61</code>，而
 <code>'ä'</code> 用两个字节 (<code>0xc3</code> <code>0xa4</code>)
 表示一个文字 <code>a</code>-分音符， U+00E4, 值 <code>0xe4</code>.
@@ -604,7 +646,11 @@ the digits in the corresponding base.
 可以使用多种反斜杠转义格式把任意值表示为 ASCII 文本。有四种方法把整型值表示为数字常量：
  <code>\x</code> 后面跟两个十六进制数字， <code>\u</code> 后面跟四个十六进制数字，
 <code>\U</code> 后面跟八个十六进制数字以及 <code>\</code> 后面跟三个八进制数字。
+<<<<<<< HEAD
 以上形式的表示中，字面量表示的值就是数字在相应的数基中代表的值。
+=======
+以上形式的表示中，字面值表示的值就是数字在相应的数基中代表的值。
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 </p>
 
 <p>
@@ -647,7 +693,11 @@ All other sequences starting with a backslash are illegal inside character liter
 </p>
 
 <p>
+<<<<<<< HEAD
 其它以反斜杠开头的字面量在字符字面量中都是非法的。
+=======
+其它以反斜杠开头的字面值在字符字面值中都是非法的。
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 </p>
 
 <pre class="ebnf">
@@ -677,7 +727,11 @@ escaped_char     = `\` ( "a" | "b" | "f" | "n" | "r" | "t" | "v" | `\` | "'" | `
 </pre>
 
 
+<<<<<<< HEAD
 <h3 id="String_literals">String literals 字符串字面量</h3>
+=======
+<h3 id="String_literals">String literals 字符串字面值</h3>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 
 <p>
 A string literal represents a <a href="#Constants">string constant</a>
@@ -686,8 +740,13 @@ raw string literals and interpreted string literals.
 </p>
 
 <p>
+<<<<<<< HEAD
 字符串字面量表示由字符序列构成的 <a href="#Constants">字符串常量</a>。有两种格式：
 原始字符串字面量和解释字符串字面量。
+=======
+字符串字面值表示由字符序列构成的 <a href="#Constants">字符串常量</a>。有两种格式：
+原始字符串字面值和解释字符串字面值。
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 </p>
 
 <p>
@@ -702,7 +761,11 @@ span multiple lines.
 <p>
 原始字符串是放在反引号 <code>``</code> 之间的字符序列。
 在反引号之间可以放置除反引号本身之外的任意字符。
+<<<<<<< HEAD
 原始字符串字面量表示的值就是由反引号之间的字符组成的字符串。
+=======
+原始字符串字面值表示的值就是由反引号之间的字符组成的字符串。
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 特别是，原始字符串中反斜杠没有特殊含义，可以跨跃多行。
 </p>
 
@@ -724,12 +787,21 @@ U+00FF.
 </p>
 
 <p>
+<<<<<<< HEAD
 解释字符串字面量就是双引号 <code>&quot;&quot;</code> 之间的字符序列。引号之间的文本不可以跨跃多行，
 字面量的值就是被解释过后的文本的值，反斜杠转义字符会被当成字符来解释（除开 <code>\'</code> 是非法的，
 但是 <code>\"</code> 是合法的）。三位八进制数 (<code>\</code><i>nnn</i>)
 和两位十六进制数 (<code>\x</code><i>nn</i>) 分别代表它们对应的字符的 <i>字节码</i>；
 所有其它的转义代表一个（可能是多字节的）UTF-8 编码的 <i>字符</i>。
 因此在字符串字面量内部 <code>\377</code> 和 <code>\xFF</code>
+=======
+解释字符串字面值就是双引号 <code>&quot;&quot;</code> 之间的字符序列。引号之间的文本不可以跨跃多行，
+字面值的值就是被解释过后的文本的值，反斜杠转义字符会被当成字符来解释（除开 <code>\'</code> 是非法的，
+但是 <code>\"</code> 是合法的）。三位八进制数 (<code>\</code><i>nnn</i>)
+和两位十六进制数 (<code>\x</code><i>nn</i>) 分别代表它们对应的字符的 <i>字节码</i>；
+所有其它的转义代表一个（可能是多字节的）UTF-8 编码的 <i>字符</i>。
+因此在字符串字面值内部 <code>\377</code> 和 <code>\xFF</code>
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 就代表点一个字节的值 <code>0xFF</code>=255，
 而  <code>ÿ</code>、<code>\u00FF</code>、<code>\U000000FF</code> 和 <code>\xc3\xbf</code> 
 代表占两个字节 <code>0xc3</code> <code>0xbf</code> 的 UTF-8 编码字符 U+00FF。
@@ -779,11 +851,19 @@ literal.
 
 <p>
 如果源代码中用两个代码点来表示一个字符（比如用重音和字母组合成一个字符），
+<<<<<<< HEAD
 如果出现在字符字面量中会是一个错误，因为字符字面量中不可以有两个字符。
 如果出现在字符串中，将表示两个代码点。
 </p>
 
 
+=======
+如果出现在字符字面值中会是一个错误，因为字符字面值中不可以有两个字符。
+如果出现在字符串中，将表示两个代码点。
+</p>
+
+
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 <h2 id="Constants">Constants 常量</h2>
 
 <p>There are <i>boolean constants</i>, <i>integer constants</i>,
@@ -823,7 +903,11 @@ The boolean truth values are represented by the predeclared constants
 <a href="#Floating-point_literals">浮点型</a>、
 <a href="#Imaginary_literals">虚数型</a>、
 <a href="#Character_literals">字符型</a> 或
+<<<<<<< HEAD
 <a href="#String_literals">字符串型</a> 字面量表示，
+=======
+<a href="#String_literals">字符串型</a> 字面值表示，
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 一个标识符就代表一个常量，
 一个 <a href="#Constant_expressions">量常表达式</a>，
 或内建函数的返回值比如应用于数组的 <code>unsafe.Sizeof</code>
@@ -924,6 +1008,10 @@ for floating-point values, both the mantissa and exponent must be twice as large
 实现限制：编译器可以选择至少两倍于机器类型大小的位数来代表数字常量；
 如浮点值，尾数和指数都必须是其两倍。
 </p>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 3212520ee328828567d972cff09ba174bf72fb6e
 
 <h2 id="Types">Types 类型</h2>
 
