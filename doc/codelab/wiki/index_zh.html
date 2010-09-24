@@ -9,6 +9,7 @@
     原文：<a href='http://golang.org/doc/codelab/wiki/'>http://golang.org/doc/codelab/wiki/</a>
     翻译：<a href='http://chaishushan.blog.163.com'>柴树杉</a> <a href='mailto:chaishushan@gmail.com'>(chaishushan@gmail.com)</a>
     翻译：<a href='http://www.wifihack.net/'>Bian Jiang</a> <a href='mailto:borderj@gmail.com'>(borderj@gmail.com)</a>
+    翻译：<a href='http://dworld2006.appspot.com'>dworld</a> <a href='mailto:dworld2006@gmail.com'>(dworld2006@gmail.com)</a>
 </pre>
 <p>
 
@@ -514,8 +515,18 @@ begin with <code>"/view/"</code>, which is not part of the page title.
 </p>
 
 <p>
+首先，这个函数从<code>r.URL.Path</code>（请求URL的path部分）中解析页面标题。
+全局常量<code>lenPath</code>保存<code>"/view/"</code>的长度，它是请求路径的前导部分。
+<code>Path</code>总是以<code>"/view/"</code>开头，去掉前面的6个字符就可以得到页面标题。
+</p>
+
+<p>
 The function then loads the page data, formats the page with a string of simple 
 HTML, and writes it to <code>c</code>, the <code>http.Conn</code>. 
+</p>
+
+<p>
+然后加载页面数据，格式化为简单的HTML字符串，写到<code>c</code>中，<code>c</code>是一个<code>http.Conn</code>类型的参数。
 </p>
 
 <p>
@@ -525,9 +536,12 @@ and generally considered bad practice. We will attend to this later.
 </p>
 
 <p>
-To use this handler, we create a <code>main</code> function that
-initializes <code>http</code> using the <code>viewHandler</code> to handle
-any requests under the path <code>/view/</code>.
+注意这里使用下划线“<code>_</code>”忽略<code>loadPage</code>的<code>os.Error</code>返回值。
+这不是一种好的做法，此处是为了保持简单。我们将在后面考虑这个问题。
+</p>
+
+<p>
+为了使用这个处理函数(handler)，我们创建一个<code>main</code>函数。它使用<code>viewHandler</code>初始化<code>http</code>，把所有以<code>/view/</code>开头的请求转发给<code>viewHandler</code>处理。
 </p>
 
 <pre>
@@ -540,10 +554,16 @@ func main() {
 <p>
 <a href="part2.go">Click here to view the code we've written so far.</a>
 </p>
+<p>
+<a href="part2.go">点击这里查看我们当前的代码。</a>
+</p>
 
 <p>
 Let's create some page data (as <code>test.txt</code>), compile our code, and
 try serving a wiki page:
+</p>
+<p>
+让我们创建一些页面数据（例如as <code>test.txt</code>），编译，运行。
 </p>
 
 <pre>
@@ -558,8 +578,13 @@ With this web server running, a visit to <code><a
 href="http://localhost:8080/view/test">http://localhost:8080/view/test</a></code>
 should show a page titled "test" containing the words "Hello world".
 </p>
+<p>
+当服务器运行的时候，访问<code><a
+href="http://localhost:8080/view/test">http://localhost:8080/view/test</a></code>
+将显示一个页面，标题为“test”，内容为“Hello world”。
+</p>
 
-<h2>Editing pages</h2>
+<h2>Editing pages 编辑页面</h2>
 
 <p>
 A wiki is not a wiki without the ability to edit pages. Let's create two new
