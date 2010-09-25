@@ -592,10 +592,17 @@ handlers: one named <code>editHandler</code> to display an 'edit page' form,
 and the other named <code>saveHandler</code> to save the data entered via the
 form.
 </p>
+<p>
+编辑功能是wiki不可缺少的。现在，我们创建两个新的处理函数(handler)：<code>editHandler</code>显示"edit page"表单(form)，<code>saveHandler</code>保存表单(form)中的数据。
+</p>
 
 <p>
 First, we add them to <code>main()</code>: 
 </p>
+<p>
+首先，将他们添加到<code>main()</code>函数中：
+</p>
+
 
 <pre>
 func main() {
@@ -610,6 +617,9 @@ func main() {
 The function <code>editHandler</code> loads the page 
 (or, if it doesn't exist, create an empty <code>page</code> struct), 
 and displays an HTML form.
+</p>
+<p>
+函数<code>editHandler</code>加载页面(或者，如果页面不存在，创建一个空<code>page</code> 结构)并且显示为一个HTML表单(form)。
 </p>
 
 <pre>
@@ -632,6 +642,10 @@ func editHandler(c *http.Conn, r *http.Request) {
 This function will work fine, but all that hard-coded HTML is ugly.
 Of course, there is a better way.
 </p>
+
+<p>
+这个函数能够工作，但是硬编码的HTML非常丑陋。当然，我们有更好的办法。
+</p>
  
 <h2>The <code>template</code> package</h2>
 
@@ -641,9 +655,15 @@ use <code>template</code> to keep the HTML in a separate file, allowing
 us to change the layout of our edit page without modifying the underlying Go
 code.
 </p>
+<p>
+<code>template</code>包是GO标准库的一个部分。我们使用<code>template</code>将HTML存放在一个单独的文件中，可以更改编辑页面的布局而不用修改相关的GO代码。
+</p>
 
 <p>
 First, we must add <code>template</code> to the list of imports:
+</p>
+<p>
+首先，我们必须添加<code>template</code>到导入列表中：
 </p>
 
 <pre>
@@ -659,6 +679,9 @@ import (
 Let's create a template file containing the HTML form. 
 Open a new file named <code>edit.html</code>, and add the following lines:
 </p>
+<p>
+创建一个包含HTML表单的模板文件。打开一个名为<code>edit.html</code>的新文件，添加下面的行：
+</p>
 
 <pre>
 &lt;h1&gt;Editing {title}&lt;/h1&gt;
@@ -672,6 +695,9 @@ Open a new file named <code>edit.html</code>, and add the following lines:
 <p>
 Modify <code>editHandler</code> to use the template, instead of the hard-coded
 HTML:
+</p>
+<p>
+修改<code>editHandler</code>，用模板替代硬编码的HTML。
 </p>
 
 <pre>
@@ -690,12 +716,18 @@ func editHandler(c *http.Conn, r *http.Request) {
 The function <code>template.ParseFile</code> will read the contents of 
 <code>edit.html</code> and return a <code>*template.Template</code>. 
 </p>
+<p>
+函数<code>template.ParseFile</code>读取<code>edit.html</code>的内容，返回<code>*template.Template</code>类型的数据。
+</p>
 
 <p>
 The method <code>t.Execute</code> replaces all occurrences of 
 <code>{title}</code> and <code>{body}</code> with the values of 
 <code>p.title</code> and <code>p.body</code>, and writes the resultant
 HTML to the <code>http.Conn</code>.
+</p>
+<p>
+方法<code>t.Execute</code>用<code>p.title</code>和<code>p.body</code>的值替换模板中所有的<code>{title}</code>和<code>{body}</code>，并且把结果写到<code>http.Conn</code>。
 </p>
 
 <p>
@@ -706,15 +738,25 @@ which escapes HTML characters (such as replacing <code>&gt;</code> with
 <code>&amp;gt;</code>). 
 This will prevent user data from corrupting the form HTML. 
 </p>
+<p>
+注意，在上面的模板中我们使用<code>{body|html}</code>。<code>|html</code>部分请求模板引擎在输出<code>body</code>的值之前，先将它传到<code>html</code>格式化器(formatter)，转义HTML字符（比如用<code>&amp;gt;</code>替换<code>&gt;</code>）。
+这样做，可以阻止用户数据破坏表单HTML。
+</p>
 
 <p>
 Now that we've removed the <code>fmt.Sprintf</code> statement, we can remove
 <code>"fmt"</code> from the <code>import</code> list.
 </p>
+<p>
+既然我们删除了<code>fmt.Sprintf</code>语句，我们可以删除导入列表中的<code>"fmt"</code>。
+</p>
 
 <p>
 While we're working with templates, let's create a template for our
 <code>viewHandler</code> called <code>view.html</code>:
+</p>
+<p>
+使用模板技术，我们可以为<code>viewHandler</code>创建一个模板，命名为<code>view.html</code>。
 </p>
 
 <pre>
@@ -727,6 +769,9 @@ While we're working with templates, let's create a template for our
 
 <p>
 Modify <code>viewHandler</code> accordingly:
+</p>
+<p>
+修改<code>viewHandler</code>：
 </p>
 
 <pre>
@@ -742,6 +787,9 @@ func viewHandler(c *http.Conn, r *http.Request) {
 Notice that we've used almost exactly the same templating code in both
 handlers. Let's remove this duplication by moving the templating code
 to its own function:
+</p>
+<p>
+注意，在两个处理函数(handler)中使用了几乎完全相同的模板处理代码，我们可以把模板处理代码写成一个单独的函数，以消除重复。
 </p>
 
 <pre>
@@ -769,14 +817,20 @@ func renderTemplate(c *http.Conn, tmpl string, p *page) {
 <p>
 The handlers are now shorter and simpler. 
 </p>
+<p>
+现在，处理函数(handler)代码更短、更加简单。
+</p>
 
-<h2>Handling non-existent pages</h2>
+<h2>Handling non-existent pages 处理不存在的页面</h2>
 
 <p>
 What if you visit <code>/view/APageThatDoesntExist</code>? The program will 
 crash. This is because it ignores the error return value from
 <code>loadPage</code>. Instead, if the requested page doesn't exist, it should 
 redirect the client to the edit page so the content may be created:
+</p>
+<p>
+当你访问<code>/view/APageThatDoesntExist</code>的时候会发生什么？程序将会崩溃。因为我们忽略了<code>loadPage</code>返回的错误。请求页不存在的时候，应该重定向客户端到编辑页，这样新的页面将会创建。
 </p>
 
 <pre>
@@ -795,11 +849,17 @@ The <code>http.Redirect</code> function adds an HTTP status code of
 <code>http.StatusFound</code> (302) and a <code>Location</code>
 header to the HTTP response.
 </p>
+<p>
+函数<code>http.Redirect</code>添加HTTP状态码<code>http.StatusFound</code> (302)和报头<code>Location</code>到HTTP响应。
+</p>
 
-<h2>Saving pages</h2>
+<h2>Saving pages 储存页面</h2>
 
 <p>
 The function <code>saveHandler</code> will handle the form submission. 
+</p>
+<p>
+函数<code>saveHandler</code>处理表单提交。
 </p>
 
 <pre>
@@ -818,6 +878,9 @@ The page title (provided in the URL) and the form's only field,
 The <code>save()</code> method is then called to write the data to a file,
 and the client is redirected to the <code>/view/</code> page.
 </p>
+<p>
+页面标题（在URL中）和表单中唯一的字段，<code>body</code>，储存在一个新的<code>page</code>中。然后调用<code>save()</code>方法将数据写到文件中，并且将客户重定向到<code>/view/</code>页面。
+</p>
 
 <p>
 The value returned by <code>FormValue</code> is of type <code>string</code>.
@@ -825,8 +888,11 @@ We must convert that value to <code>[]byte</code> before it will fit into
 the <code>page</code> struct.  We use <code>[]byte(body)</code> to perform
 the conversion.
 </p>
+<p>
+<code>FormValue</code>返回值的类型是<code>string</code>，在将它添加<code>page</code>结构前，我们必须将其转换为<code>[]byte</code>类型。我们使用<code>[]byte(body)</code>执行转换。
+</p>
 
-<h2>Error handling</h2>
+<h2>Error handling 错误处理</h2>
 
 <p>
 There are several places in our program where errors are being ignored.  This
@@ -835,9 +901,15 @@ crash.  A better solution is to handle the errors and return an error message
 to the user. That way if something does go wrong, the server will continue to
 function and the user will be notified.
 </p>
+<p>
+在我们的程序中，有几个地方的错误被忽略了。这是一种很糟糕的方式，特别是在错误发生后，程序会崩溃。更好的方案是处理错误并返回错误消息给用户。这样做，当错误发生后，服务器可以继续运行，用户也会得到通知。
+</p>
 
 <p>
 First, let's handle the errors in <code>renderTemplate</code>:
+</p>
+<p>
+首先，我们处理<code>renderTemplate</code>中的错误：
 </p>
 
 <pre>
@@ -859,9 +931,15 @@ The <code>http.Error</code> function sends a specified HTTP response code
 (in this case "Internal Server Error") and error message.
 Already the decision to put this in a separate function is paying off.
 </p>
+<p>
+函数<code>http.Error</code>发送一个特定的HTTP响应码（这种情况下表示“Internal Server Error”）和错误消息。将这些封装在一个函数中很划算。
+</p>
 
 <p>
 Now let's fix up <code>saveHandler</code>:
+</p>
+<p>
+现在，让我们修复<code>saveHandler</code>：
 </p>
 
 <pre>
@@ -881,8 +959,11 @@ func saveHandler(c *http.Conn, r *http.Request, title string) {
 Any errors that occur during <code>p.save()</code> will be reported 
 to the user.
 </p>
+<p>
+<code>p.save()</code>中发生的任何错误都将报告给用户。
+</p>
 
-<h2>Template caching</h2>
+<h2>Template caching 模板缓存</h2>
 
 <p>
 There is an inefficiency in this code: <code>renderTemplate</code> calls 
@@ -891,11 +972,17 @@ A better approach would be to call <code>ParseFile</code> once for each
 template at program initialization, and store the resultant 
 <code>*Template</code> values in a data structure for later use.
 </p>
+<p>
+代码中有一个低效率的地方：每次显示一个页面，<code>renderTemplate</code>都要调用<code>ParseFile</code>。更好的做法是在程序初始化的时候对每个模板调用<code>ParseFile</code>一次，将结果保存为<code>*Template</code>类型的值，在以后使用。
+</p>
 
 <p>
 First we create a global map named <code>templates</code> in which to store 
 our <code>*Template</code> values, keyed by <code>string</code> 
 (the template name):
+</p>
+<p>
+首先，我们创建一个全局map，命名为<code>templates</code>。<code>templates</code>用于储存<code>*Template</code>类型的值，使用<code>string</code>索引。
 </p>
 
 <pre>
@@ -909,7 +996,10 @@ Then we create an <code>init</code> function, which will be called before
 <code>ParseFile</code> that does not return an error code; instead, it panics
 if an error is encountered. A panic is appropriate here; if the templates can't
 be loaded the only sensible thing to do is exit the program.
-</p
+</p>
+<p>
+然后，我们创建一个<code>init</code>函数，<code>init</code>函数会在程序初始化的时候调用，在<code>main</code>函数之前。函数<code>template.MustParseFile</code>是<code>ParseFile</code>的一个封装，它不返回错误码，而是在错误发生的时候抛出(panic)一个错误。抛出错误(panic)在这里是合适的，如果模板不能加载，程序唯一能做的有意义的事就是退出。
+</p>
 
 <pre>
 func init() {
@@ -925,11 +1015,18 @@ over an array constant containing the names of the templates we want parsed.
 If we were to add more templates to our program, we would add their names to 
 that array.
 </p>
+<p>
+使用带<code>range</code>语句的<code>for</code>循环访问一个常量数组中的每一个元素，这个常量数组中包含了我们想要加载的所有模板的名称。如果我们想要添加更多的模板，只要把模板名称添加的数组中就可以了。
+</p>
 
 <p>
 We then modify our <code>renderTemplate</code> function to call 
 the <code>Execute</code> method on the appropriate <code>Template</code> from 
 <code>templates</code>:
+</p>
+<p>
+修改<code>renderTemplate</code>函数，在<code>templates</code>中相应的<code>Template</code>上调用<code>Execute</code>方法：
+</p>
 
 <pre>
 func renderTemplate(c *http.Conn, tmpl string, p *page) {
@@ -940,17 +1037,23 @@ func renderTemplate(c *http.Conn, tmpl string, p *page) {
 }
 </pre>
 
-<h2>Validation</h2>
+<h2>Validation 验证</h2>
 
 <p>
 As you may have observed, this program has a serious security flaw: a user
 can supply an arbitrary path to be read/written on the server. To mitigate
 this, we can write a function to validate the title with a regular expression.
 </p>
+<p>
+你可能已经发现，程序中有一个严重的安全漏洞：用户可以提供任意的路径在服务器上执行读写操作。为了消除这个问题，我们使用正则表达式验证页面的标题。
+</p>
 
 <p>
 First, add <code>"regexp"</code> to the <code>import</code> list.
 Then we can create a global variable to store our validation regexp:
+</p>
+<p>
+首先，添加<code>"regexp"</code>到导入列表。然后创建一个全局变量存储我们的验证正则表达式：
 </p>
 
 <pre>
@@ -965,10 +1068,16 @@ is distinct from <code>Compile</code> in that it will panic if
 the expression compilation fails, while <code>Compile</code> returns an 
 <code>os.Error</code> as a second parameter. 
 </p>
+<p>
+函数<code>regexp.MustCompile</code>解析并且编译正则表达式，返回一个<code>regexp.Regexp</code>对象。和<code>template.MustParseFile</code>类似，当表达式编译错误时，<code>MustCompile</code>抛出一个错误，而<code>Compile</code>在它的第二个返回参数中返回一个<code>os.Error</code>。
+</p>
 
 <p>
 Now, let's write a function that extracts the title string from the request 
 URL, and tests it against our <code>titleValidator</code> expression:
+</p>
+<p>
+现在，我们编写一个函数，它从请求URL解析中解析页面标题，并且使用<code>titleValidator</code>进行验证：
 </p>
 
 <pre>
@@ -988,9 +1097,15 @@ error value.  If the title is invalid, the function will write a
 "404 Not Found" error to the HTTP connection, and return an error to the 
 handler. 
 </p>
+<p>
+如果标题有效，它返回一个<code>nil</code>错误值。如果无效，它写"404 Not Found"错误到HTTP连接中，并且返回一个错误对象。
+</p>
 
 <p>
 Let's put a call to <code>getTitle</code> in each of the handlers:
+</p>
+<p>
+修改所有的处理函数，使用<code>getTitle</code>获取页面标题：
 </p>
 
 <pre>
@@ -1035,7 +1150,7 @@ func saveHandler(c *http.Conn, r *http.Request) {
 }
 </pre>
 
-<h2>Introducing Function Literals and Closures</h2>
+<h2>Introducing Function Literals and Closures 函数文本和闭包</h2>
 
 <p>
 Catching the error condition in each handler introduces a lot of repeated code.
@@ -1045,10 +1160,16 @@ validation and error checking? Go's
 literals</a> provide a powerful means of abstracting functionality 
 that can help us here.
 </p>
+<p>
+处理函数(handler)中捕捉错误是一些类似的重复代码。如果我们想将捕捉错误的代码封装成一个函数，应该怎么做？GO的<a href="http://golang.org/doc/go_spec.html#Function_declarations">函数文本</a>提供了强大的抽象能力，可以帮我们做到这点。
+</p>
 
 <p>
 First, we re-write the function definition of each of the handlers to accept
 a title string:
+</p>
+<p>
+首先，我们重写每个处理函数的定义，让它们接受标题字符串:
 </p>
 
 <pre>
@@ -1061,6 +1182,9 @@ func saveHandler(c, *http.Conn, r *http.Request, title string)
 Now let's define a wrapper function that <i>takes a function of the above
 type</i>, and returns a function of type <code>http.HandlerFunc</code>
 (suitable to be passed to the function <code>http.HandleFunc</code>):
+</p>
+<p>
+定义一个封装函数，<i>接受上面定义的函数类型</i>，返回<code>http.HandlerFunc</code>（可以传送给函数<code>http.HandleFunc</code>）。
 </p>
 
 <pre>
@@ -1078,10 +1202,16 @@ outside of it. In this case, the variable <code>fn</code> (the single argument
 to <code>makeHandler</code>) is enclosed by the closure. The variable
 <code>fn</code> will be one of our save, edit, or view handlers.
 </p>
+<p>
+返回的函数称为闭包，因为它包含了定义在它外面的值。在这里，变量<code>fn</code>（<code>makeHandler</code>的唯一参数）被闭包包含。<code>fn</code>是我们的处理函数，save、edit、或view。
+</p>
 
 <p>
 Now we can take the code from <code>getTitle</code> and use it here
 (with some minor modifications):
+</p>
+<p>
+我们可以把<code>getTitle</code>的代码复制到这里（有一些小的变动）：
 </p>
 
 <pre>
@@ -1109,11 +1239,17 @@ If the <code>title</code> is valid, the enclosed handler function
 <code>fn</code> will be called with the <code>Conn</code>,
 <code>Request</code>, and <code>title</code> as arguments.
 </p>
+<p> 
+<code>makeHandler</code>返回的闭包是一个函数，它有两个参数，<code>http.Conn</code>和<code>http.Request</code>（因此，它是<code>http.HandlerFunc</code>）。闭包从请求路径解析<code>title</code>，使用<code>titleValidator</code>验证标题。如果<code>title</code>无效，使用函数<code>http.NotFound</code>将错误写到<code>Conn</code>。如果<code>title</code>有效，封装的处理函数<code>fn</code>将被调用，参数为<code>Conn</code>,
+<code>Request</code>, 和<code>title</code>。
+</p>
 
 <p>
 Now we can wrap the handler functions with <code>makeHandler</code> in 
 <code>main</code>, before they are registered with the <code>http</code> 
 package:
+</p>
+<p>在<code>main</code>函数中，我们用<code>makeHandler</code>封装所有处理函数：
 </p>
 
 <pre>
@@ -1128,6 +1264,9 @@ func main() {
 <p>
 Finally we remove the calls to <code>getTitle</code> from the handler functions,
 making them much simpler:
+</p>
+<p>
+最后，我们可以删除处理函数中的<code>getTitle</code>，让处理函数更简单。
 </p>
 
 <pre>
@@ -1160,14 +1299,20 @@ func saveHandler(c *http.Conn, r *http.Request, title string) {
 }
 </pre>
 
-<h2>Try it out!</h2>
+<h2>Try it out! 试试！</h2>
 
 <p>
 <a href="final.go">Click here to view the final code listing.</a>
 </p>
+<p>
+<a href="final.go">点击这里查看最终的代码</a>
+</p>
 
 <p>
 Recompile the code, and run the app:
+</p>
+<p>
+重新编译代码，运行程序：
 </p>
 
 <pre>
@@ -1181,23 +1326,34 @@ Visiting <a href="http://localhost:8080/view/ANewPage">http://localhost:8080/vie
 should present you with the page edit form. You should then be able to 
 enter some text, click 'Save', and be redirected to the newly created page.
 </p>
+<p>
+访问<a href="http://localhost:8080/view/ANewPage">http://localhost:8080/view/ANewPage</a>将会出现一个编辑表单。你可以输入一些文版，点击“Save”，重定向到新的页面。
+</p>
 
-<h2>Other tasks</h2>
+<h2>Other tasks 其他任务</h2>
 
 <p>
 Here are some simple tasks you might want to tackle on your own:
 </p>
+<p>
+这里有一些简单的任务，你可以自己解决：
+</p>
 
 <ul>
 <li>Store templates in <code>tmpl/</code> and page data in <code>data/</code>.
+<li>把模板文件存放在<code>tmpl/</code>目录，页面数据存放在<code>data/</code>目录。
 <li>Add a handler to make the web root redirect to 
 	<code>/view/FrontPage</code>.</li>
+<li>增加一个处理函数(handler)，将对根目录的请求重定向到<code>/view/FrontPage</code>。</li>
 <li>Spruce up the page templates by making them valid HTML and adding some
 	CSS rules.</li>
+<li>修饰页面模板，使其成为有效的HTML文件。添加CSS规则。</li>
 <li>Implement inter-page linking by converting instances of 
 	<code>[PageName]</code> to <br>
 	<code>&lt;a href="/view/PageName"&gt;PageName&lt;/a&gt;</code>.
 	(hint: you could use <code>regexp.ReplaceAllFunc</code> to do this)
+	</li>
+<li>实现页内链接。将<code>[PageName]</code>修改为<code>&lt;a href="/view/PageName"&gt;PageName&lt;/a&gt;</code>。(提示：可以使用<code>regexp.ReplaceAllFunc</code>达到这个效果)
 	</li>
 </ul>
 
