@@ -447,7 +447,7 @@ The following character sequences represent <a href="#Operators">operators</a>, 
      &amp;^          &amp;^=
 </pre>
 
-<h3 id="Integer_literals">Integer literals 整型字面值</h3>
+<h3 id="Integer_literals">Integer literals 整型字面量</h3>
 
 <p>
 An integer literal is a sequence of digits representing an
@@ -458,9 +458,9 @@ An optional prefix sets a non-decimal base: <code>0</code> for octal, <code>0x</
 </p>
 
 <p>
-整型字面值是一个代表 <a href="#Constants">整型常量</a> 的数字序列。
+整型字面量是一个代表 <a href="#Constants">整型常量</a> 的数字序列。
 可以添加一个前缀来表示非十进制基底的数： <code>0</code> 代表八进制， <code>0x</code> 或
-<code>0X</code> 代表十六进制。在十六进制的字面值中，字母
+<code>0X</code> 代表十六进制。在十六进制的字面量中，字母
 <code>a-f</code> 和 <code>A-F</code> 代表值 10 到 15。
 </p>
 
@@ -478,7 +478,7 @@ hex_lit     = "0" ( "x" | "X" ) hex_digit { hex_digit } .
 170141183460469231731687303715884105727
 </pre>
 
-<h3 id="Floating-point_literals">Floating-point literals 浮点数字面值</h3>
+<h3 id="Floating-point_literals">Floating-point literals 浮点数字面量</h3>
 <p>
 A floating-point literal is a decimal representation of a
 <a href="#Constants">floating-point constant</a>.
@@ -491,7 +491,7 @@ point or the exponent may be elided.
 </p>
 
 <p>
-浮点字面值是 <a href="#Constants">浮点数常量</a>
+浮点字面量是 <a href="#Constants">浮点数常量</a>
 的十进制表示。
 它有一个整数部分、一个分数部分、一个小数部分和一个指数部分。
 整数和分数部分包括十进制数；指数部分是一个 <code>e</code> or <code>E</code>
@@ -519,7 +519,7 @@ exponent  = ( "e" | "E" ) [ "+" | "-" ] decimals .
 .12345E+5
 </pre>
 
-<h3 id="Imaginary_literals">Imaginary literals 虚数字面值</h3>
+<h3 id="Imaginary_literals">Imaginary literals 虚数字面量</h3>
 <p>
 An imaginary literal is a decimal representation of the imaginary part of a
 <a href="#Constants">complex constant</a>.
@@ -530,9 +530,9 @@ by the lower-case letter <code>i</code>.
 </p>
 
 <p>
-虚数字面值是 <a href="#Constants">复数型常量</a> 的虚数部分的十进制表示。
+虚数字面量是 <a href="#Constants">复数型常量</a> 的虚数部分的十进制表示。
 它由一个
-<a href="#Floating-point_literals">浮点数字面值</a>
+<a href="#Floating-point_literals">浮点数字面量</a>
 或二进制整型后面跟一个小字字母 <code>i</code> 构成。
 </p>
 
@@ -553,7 +553,7 @@ imaginary_lit = (decimals | float_lit) "i" .
 </pre>
 
 
-<h3 id="Character_literals">Character literals 字符字面值</h3>
+<h3 id="Character_literals">Character literals 字符字面量</h3>
 
 <p>
 A character literal represents an <a href="#Constants">integer constant</a>,
@@ -583,7 +583,7 @@ a literal <code>a</code>-dieresis, U+00E4, value <code>0xe4</code>.
 
 <p>
 最简单的形式就是表示单引号包围的单一字符；由于 Go 的源代码文本是用 UTF-8 编码的 Unicode 字符，
-因此多个 UTF-8 编码的字节可以表示一个整型值。如，字面值 <code>'a'</code>
+因此多个 UTF-8 编码的字节可以表示一个整型值。如，字面量 <code>'a'</code>
 用一个字节表示一个文字 <code>a</code>，Unicode U+0061， 值 <code>0x61</code>，而
 <code>'ä'</code> 用两个字节 (<code>0xc3</code> <code>0xa4</code>)
 表示一个文字 <code>a</code>-分音符， U+00E4, 值 <code>0xe4</code>.
@@ -604,7 +604,7 @@ the digits in the corresponding base.
 可以使用多种反斜杠转义格式把任意值表示为 ASCII 文本。有四种方法把整型值表示为数字常量：
  <code>\x</code> 后面跟两个十六进制数字， <code>\u</code> 后面跟四个十六进制数字，
 <code>\U</code> 后面跟八个十六进制数字以及 <code>\</code> 后面跟三个八进制数字。
-以上形式的表示中，字面值表示的值就是数字在相应的数基中代表的值。
+以上形式的表示中，字面量表示的值就是数字在相应的数基中代表的值。
 </p>
 
 <p>
@@ -647,7 +647,7 @@ All other sequences starting with a backslash are illegal inside character liter
 </p>
 
 <p>
-其它以反斜杠开头的字面值在字符字面值中都是非法的。
+其它以反斜杠开头的字面量在字符字面量中都是非法的。
 </p>
 
 <pre class="ebnf">
@@ -677,7 +677,7 @@ escaped_char     = `\` ( "a" | "b" | "f" | "n" | "r" | "t" | "v" | `\` | "'" | `
 </pre>
 
 
-<h3 id="String_literals">String literals 字符串字面值</h3>
+<h3 id="String_literals">String literals 字符串字面量</h3>
 
 <p>
 A string literal represents a <a href="#Constants">string constant</a>
@@ -686,8 +686,8 @@ raw string literals and interpreted string literals.
 </p>
 
 <p>
-字符串字面值表示由字符序列构成的 <a href="#Constants">字符串常量</a>。有两种格式：
-原始字符串字面值和解释字符串字面值。
+字符串字面量表示由字符序列构成的 <a href="#Constants">字符串常量</a>。有两种格式：
+原始字符串字面量和解释字符串字面量。
 </p>
 
 <p>
@@ -702,7 +702,7 @@ span multiple lines.
 <p>
 原始字符串是放在反引号 <code>``</code> 之间的字符序列。
 在反引号之间可以放置除反引号本身之外的任意字符。
-原始字符串字面值表示的值就是由反引号之间的字符组成的字符串。
+原始字符串字面量表示的值就是由反引号之间的字符组成的字符串。
 特别是，原始字符串中反斜杠没有特殊含义，可以跨跃多行。
 </p>
 
@@ -724,12 +724,12 @@ U+00FF.
 </p>
 
 <p>
-解释字符串字面值就是双引号 <code>&quot;&quot;</code> 之间的字符序列。引号之间的文本不可以跨跃多行，
-字面值的值就是被解释过后的文本的值，反斜杠转义字符会被当成字符来解释（除开 <code>\'</code> 是非法的，
+解释字符串字面量就是双引号 <code>&quot;&quot;</code> 之间的字符序列。引号之间的文本不可以跨跃多行，
+字面量的值就是被解释过后的文本的值，反斜杠转义字符会被当成字符来解释（除开 <code>\'</code> 是非法的，
 但是 <code>\"</code> 是合法的）。三位八进制数 (<code>\</code><i>nnn</i>)
 和两位十六进制数 (<code>\x</code><i>nn</i>) 分别代表它们对应的字符的 <i>字节码</i>；
 所有其它的转义代表一个（可能是多字节的）UTF-8 编码的 <i>字符</i>。
-因此在字符串字面值内部 <code>\377</code> 和 <code>\xFF</code>
+因此在字符串字面量内部 <code>\377</code> 和 <code>\xFF</code>
 就代表点一个字节的值 <code>0xFF</code>=255，
 而  <code>ÿ</code>、<code>\u00FF</code>、<code>\U000000FF</code> 和 <code>\xc3\xbf</code> 
 代表占两个字节 <code>0xc3</code> <code>0xbf</code> 的 UTF-8 编码字符 U+00FF。
@@ -779,7 +779,7 @@ literal.
 
 <p>
 如果源代码中用两个代码点来表示一个字符（比如用重音和字母组合成一个字符），
-如果出现在字符字面值中会是一个错误，因为字符字面值中不可以有两个字符。
+如果出现在字符字面量中会是一个错误，因为字符字面量中不可以有两个字符。
 如果出现在字符串中，将表示两个代码点。
 </p>
 
@@ -823,7 +823,7 @@ The boolean truth values are represented by the predeclared constants
 <a href="#Floating-point_literals">浮点型</a>、
 <a href="#Imaginary_literals">虚数型</a>、
 <a href="#Character_literals">字符型</a> 或
-<a href="#String_literals">字符串型</a> 字面值表示，
+<a href="#String_literals">字符串型</a> 字面量表示，
 一个标识符就代表一个常量，
 一个 <a href="#Constant_expressions">量常表达式</a>，
 或内建函数的返回值比如应用于数组的 <code>unsafe.Sizeof</code>
@@ -935,7 +935,11 @@ which composes a new type from previously declared types.
 </p>
 
 <p>
+<<<<<<< HEAD
 类型决定了数据集及应用于该类型数据的操作。类型可以用一个（合法的） <i>类型名</i> (§<a href="#Qualified_identifier">合格标识</a>， §<a href="#Type_declarations">类型声明</a>) 或一个 <i>类型字面值</i> 来指定，新类型是由已经声明的类型组成。
+=======
+类型决定了数据集及应用于该类型数据的操作。类型可以用一个（合法的） <i>类型名</i> (§<a href="#Qualified_identifier">合格标识</a>， §<a href="#Type_declarations">类型声明</a>) 或一个 <i>类型字面量</i> 来指定，新类型是由已经声明的类型组成。
+>>>>>>> github
 </p>
 
 <pre class="ebnf">
@@ -954,7 +958,11 @@ type literals.
 </p>
 
 <p>
+<<<<<<< HEAD
 布尔、数字和字符串的命名实例是<a href="#Predeclared_identifiers">预声明的</a>。<i>复合类型</i>—数组、结构体、指针、函数、接口、切片、映射和管道类型—都可以用类型字面值在构造。
+=======
+布尔、数字和字符串的命名实例是<a href="#Predeclared_identifiers">预声明的</a>。<i>复合类型</i>—数组、结构体、指针、函数、接口、切片、映射和管道类型—都可以用类型字面量在构造。
+>>>>>>> github
 </p>
 
 <p>
@@ -1094,7 +1102,11 @@ is a string literal.
 </p>
 
 <p>
+<<<<<<< HEAD
 字符串的元素是 <code>byte</code> 类型，可以通过常用的 <a href="#Indexes">索引操作</a> 访问。访问元素的地址是非法的；如果 <code>s[i]</code> 是字符串的第 <i>i</i> 个字节，<code>&amp;s[i]</code> 是非法的。字符串 <code>s</code> 的长度可以使用内建函数 <code>len</code> 得到。如果 <code>s</code> 是一个字符串字面值，它的长度是一个编译时常量。
+=======
+字符串的元素是 <code>byte</code> 类型，可以通过常用的 <a href="#Indexes">索引操作</a> 访问。访问元素的地址是非法的；如果 <code>s[i]</code> 是字符串的第 <i>i</i> 个字节，<code>&amp;s[i]</code> 是非法的。字符串 <code>s</code> 的长度可以使用内建函数 <code>len</code> 得到。如果 <code>s</code> 是一个字符串字面量，它的长度是一个编译时常量。
+>>>>>>> github
 </p>
 
 
@@ -1786,7 +1798,11 @@ A channel may be closed and tested for closure with the built-in functions
 管道可以使用内建函数 <a href="#Close_and_closed"><code>close</code> 和 <code>closed</code></a>来关闭和检测是否关闭。
 </p>
 
+<<<<<<< HEAD
 <h2 id="Properties_of_types_and_values">Properties of types and values</h2>
+=======
+<h2 id="Properties_of_types_and_values">Properties of types and values 类型和值的属性</h2>
+>>>>>>> github
 
 <p>
 Two types are either <i>identical</i> or <i>different</i>, and they are
@@ -1794,9 +1810,14 @@ either <i>compatible</i> or <i>incompatible</i>.
 Identical types are always compatible, but compatible types need not be identical.
 </p>
 
-<h3 id="Type_identity_and_compatibility">Type identity and compatibility</h3>
+<p>
+两个类型要么 <i>相同</i> 要么 <i>不同</i>，要么 <i>兼容</i> 要么 <i>不兼容</i>。
+相同的类型总是兼容的，但兼容的类型不一定是相同的。
+</p>
 
-<h4 id="Type_identity">Type identity</h4>
+<h3 id="Type_identity_and_compatibility">Type identity and compatibility 类型一致性和兼容性</h3>
+
+<h4 id="Type_identity">Type identity 类型一致性</h4>
 
 <p>
 Two named types are identical if their type names originate in the same
@@ -1804,6 +1825,10 @@ type declaration (§<a href="#Declarations_and_scope">Declarations and scope</a>
 are never identical. Two unnamed types are identical if the corresponding
 type literals have the same literal structure and corresponding components have
 identical types. In detail:
+</p>
+
+<p>
+有两个被命名的类型，如果它们的类型是由同一个类型声明定义的(§<a href="#Declarations_and_scope">声明与作用域</a>)，那么这两个类型是相同的。 命名的类型与未命名是不同的。对两个未命名的类型来说，如果二者相应的类型字面量有相同的结构并且对应的部分有相同的类型，那么它们是相同的。详细定义：
 </p>
 
 <ul>
@@ -1835,7 +1860,25 @@ identical types. In detail:
 	    the same direction.</li>
 </ul>
 
-<h4 id="Type_compatibility">Type compatibility</h4>
+<ul>
+	<li>对两个数组来说，如果具有相同的元素类型和长度，则它们类型相同。</li>
+
+	<li>对两个切片来说，如果有相同的元素类型，则它们类型相同。</li>
+
+	<li>对两个结构体来说，如果声明的成员有相同的顺序和相同的类型，并且匿名成员被看作是有相同的名称，则它们类型相同。</li>
+
+	<li>对两个指针来说，如果有相同的基类型，则它们类型相同。</li>
+
+	<li>对两个函数来说，如果如果参数列表及返回值的数量和类型相同，则它们类型相同。所有 "..." 参数，如果没有指定类型，默认是具有相同类型的。如果指定类型 <code>T</code>，那么它们再是类同类型的。参数名与返回值列表的名称不要求相同。</li>
+
+	<li>对两个接口来说，如果有相同的方法集，并且方法集的名字和类型都相同，那么它们类型类同。方法的顺序不需要相同。</li>
+
+	<li>对两个映射来说，如果有相同的键类型和相同的值类型，则它们类型相同。</li>
+
+	<li>对两个管道来说，如果有相同的值类型和相同的方向，则它们类型相同。</li>
+</ul>
+
+<h4 id="Type_compatibility">Type compatibility 类型兼容</h4>
 
 <p>
 Type compatibility is less stringent than type identity: a named and an unnamed
@@ -1845,8 +1888,16 @@ same as for type identity listed above but with ``compatible''
 substituted for ``identical''.
 </p>
 
+<p>类型兼容没有类型相同严格：命名类型与未命名类型只要各自的类型字面量是兼容，它们就兼容。
+在其它方面，兼容性的定义和上面类型相同的定义是相似的，只是要把上面的同性改为兼容。
+</p>
+
 <p>
 Given the declarations
+</p>
+
+<p>
+有如下声明
 </p>
 
 <pre>
@@ -1864,6 +1915,10 @@ type (
 these types are identical:
 </p>
 
+<p>
+以下类型是相同的：
+</p>
+
 <pre>
 T0 and T0
 []int and []int
@@ -1877,7 +1932,15 @@ because they are named types with distinct declarations.
 </p>
 
 <p>
+<code>T0</code> 和 <code>T1</code> 即不相同也不兼容，因为它们是有不同声明的命名类型。
+</p>
+
+<p>
 These types are compatible:
+</p>
+
+<p>
+这些类型是兼容的：
 </p>
 
 <pre>
@@ -1892,11 +1955,19 @@ T4 and func(x int, y float) *[]string
 they have different field names.
 </p>
 
-<h3 id="Assignment_compatibility">Assignment compatibility</h3>
+<p>
+<code>T2</code> 与 <code>struct { a, c int }</code> 不兼容，因为它们的成员名称不同。
+</p>
+
+<h3 id="Assignment_compatibility">Assignment compatibility 赋值兼容性</h3>
 
 <p>
 A value <code>v</code> of static type <code>V</code> is <i>assignment compatible</i>
 with a type <code>T</code> if one or more of the following conditions applies:
+</p>
+
+<p>
+如果满足下面的一条或多条规定，那么 <code>V</code> 类型的变量 <code>v</code> 与  <code>T</code> 类型 <i>赋值兼容</i>
 </p>
 
 <ul>
@@ -1906,6 +1977,25 @@ with a type <code>T</code> if one or more of the following conditions applies:
 <li>
 <code>T</code> is an interface type and
 <code>V</code> <a href="#Interface_types">implements</a> <code>T</code>.
+</li>
+<li>
+<code>V</code> is a pointer to an array and <code>T</code> is a slice type
+with compatible element type and at least one of <code>V</code> or <code>T</code> is unnamed.
+After assignment, the slice variable refers to the original array; the elements are not
+copied.
+</li>
+<li>
+<code>V</code> is a bidirectional channel and <code>T</code> is a channel type
+with compatible element type and at least one of <code>V</code> or <code>T</code> is unnamed.
+</li>
+</ul>
+
+<ul>
+<li>
+<code>V</code> 和 <code>T</code> 兼容.
+</li>
+<li>
+<code>T</code> 接口类型并且 <code>V</code> <a href="#Interface_types">实现</a>了 <code>T</code>.
 </li>
 <li>
 <code>V</code> is a pointer to an array and <code>T</code> is a slice type
