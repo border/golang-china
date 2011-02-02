@@ -7,6 +7,7 @@
     原文：<a href='http://golang.org/go_mem.html'>http://golang.org/go_mem.html</a>
     翻译：<a href='http://chaishushan.blog.163.com'>柴树杉</a> <a href='mailto:chaishushan@gmail.com'>(chaishushan@gmail.com)</a>
     翻译：<a href='http://www.wifihack.net/'>Bian Jiang</a> <a href='mailto:borderj@gmail.com'>(borderj@gmail.com)</a>
+    翻译：<a href='http://ebenzhang.blogbus.com/'>eBenCheung</a> <a href='mailto:zhangyingneng@gmail.com'>(zhangyingneng@gmail.com)</a>
 </pre>
 <p>
 
@@ -18,8 +19,8 @@ document discusses the differences between Go and C++, and says little
 to nothing about the similarities.
 
 <p>
-Go和C＋＋一样，也是一门系统编程语言。该文档主要面向有C＋＋经验的程序开发人员。它讨论
-了Go和C＋＋的不同之处，当然也讨论了一些相似之处。
+Go和C++一样，也是一门系统编程语言。该文档主要面向有C++经验的程序开发人员。它讨论
+了Go和C++的不同之处，当然也讨论了一些相似之处。
 
 <p>
 For a more general introduction to Go, see the
@@ -891,7 +892,7 @@ multiple operating system threads.  You do not have to worry
 about these details.
 
 <p>
-goroutines和支持多路并发草组系统中的协程（coroutines）类似，用户不用关心具体
+goroutines和支持多路并发操作系统中的协程（coroutines）类似，用户不用关心具体
 的实现细节。
 
 <pre>
@@ -946,7 +947,7 @@ When calling
 functions, channels are passed by reference.
 
 <p>
-管道可以用于两个goroutines之间的通讯。我们可以用管道传递任意类脂的变量。Go语言中管道是
+管道可以用于两个goroutines之间的通讯。我们可以用管道传递任意类型的变量。Go语言中管道是
 廉价并且便捷的。二元操作符 <code>&lt;-</code> 用于向管道发送数据。一元操作符<code>&lt;-</code>
 用于从管道接收数据。在函数参数中，管道通过引用传递给函数。
 
@@ -1000,7 +1001,7 @@ func manager2(ch chan cmd2) {
 To use <code>manager2</code>, given a channel to it:
 
 <p>
-这里掩饰了如何使用<code>manager2</code>：
+这里演示了如何使用<code>manager2</code>：
 
 <pre>
 func f4(ch &lt;- chan cmd2) int {
